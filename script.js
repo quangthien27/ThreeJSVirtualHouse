@@ -54,9 +54,9 @@ class Environment {
         const theta = (this.startTime / this.segmentCount) * Math.PI * 2;
         const sunPos = new THREE.Vector3(Math.sin(theta) * configs.plotRadius, Math.cos(theta) * -configs.plotRadius, 0);
 
-        const axis = new THREE.Vector3(0, 1, 0);
-        const angle = Math.PI / 2;
-        sunPos.applyAxisAngle(axis, angle);
+        // const axis = new THREE.Vector3(0, 1, 0);
+        // const angle = Math.PI / 2;
+        // sunPos.applyAxisAngle(axis, angle);
 
         this.sun.position.set(sunPos.x, sunPos.y, sunPos.z);
         this.sunlight.position.set(sunPos.x, sunPos.y, sunPos.z);
