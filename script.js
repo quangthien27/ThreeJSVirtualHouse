@@ -40,7 +40,10 @@ class Environment {
             const theta = (i / this.segmentCount) * Math.PI * 2;
             geometry.vertices.push(new THREE.Vector3(Math.sin(theta) * configs.plotRadius, Math.cos(theta) * -configs.plotRadius, 0));
         }
+        this.axis = new THREE.Vector3(1, 0, 0);
+        this.angle = 10;
         this.oval = new THREE.LineSegments(geometry, material);
+        this.oval.rotateOnAxis(this.axis, this.angle);
 
         scene.add(this.sun);
         scene.add(this.oval);
@@ -52,10 +55,6 @@ class Environment {
 
         const theta = (this.startTime / this.segmentCount) * Math.PI * 2;
         const sunPos = new THREE.Vector3(Math.sin(theta) * configs.plotRadius, Math.cos(theta) * -configs.plotRadius, 0);
-
-        // const axis = new THREE.Vector3(0, 1, 0);
-        // const angle = Math.PI / 2;
-        // sunPos.applyAxisAngle(axis, angle);
 
         this.sun.position.set(sunPos.x, sunPos.y, sunPos.z);
         this.sunlight.position.set(sunPos.x, sunPos.y, sunPos.z);
@@ -312,10 +311,11 @@ function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x292325);
     scene.add(new THREE.AmbientLight(new THREE.Color(.6, .7, .9), 0.4));
+    scene.add(new THREE.AxesHelper(1000));
 
     // CAMERA
     camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
-    camera.position.set(150, 150, 250);
+    camera.position.set(200, 200, 300);
     camera.lookAt(0, 0, 0);
     camera.add(new THREE.PointLight(new THREE.Color(.2, .2, .2), 0.9));
 
@@ -338,11 +338,7 @@ function init() {
 
     // ENVIRONMENT
     environment = new Environment();
-
-    // PLOT
     plot = new Plot();
-
-    // ROOMS
     matLib = new MaterialLibrary();
     roomGen();
 
