@@ -25,10 +25,9 @@ class Environment {
 
         // SUNLIGHT
         this.sunlight = new THREE.DirectionalLight(0xffDDCC, 1);
-        this.sunlight.position.set(30, 50, 20);
         this.sunlight.castShadow = true;
-        this.sunlight.shadow.mapSize.width = 4096;
-        this.sunlight.shadow.mapSize.height = 4096;
+        this.sunlight.shadow.mapSize.width = 512 * 8;
+        this.sunlight.shadow.mapSize.height = 512 * 8;
         this.sunlight.shadow.camera.left = -300;
         this.sunlight.shadow.camera.right = 300;
         this.sunlight.shadow.camera.top = 300;

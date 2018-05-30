@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Virtual House</title>
+    <link href='https://fonts.googleapis.com/css?family=Alegreya Sans SC' rel='stylesheet'>
+
+    <style>
+        body {
+            margin: 0;
+            background-color: #777;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/91/three.min.js"></script>
+    <script src="http://threejs.org/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+<script>
+    //create the scene
+    /*jshint esversion: 6 */
+    var scene = new THREE.Scene();
+
+    //create the perspective camera
+    //for parameters see https://threejs.org/docs/#api/cameras/PerspectiveCamera
+    var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+    //set the position of the camera
+    camera.position.set(100, 100, 100);
+
+    //and the looking direction
+    camera.lookAt(0, 0, 1);
+
+    //create the WebGL renderer
+    var renderer = new THREE.WebGLRenderer({antialias: true});
+
+    //set the size of the rendering window
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    //add the renderer to the current document
+    document.body.appendChild(renderer.domElement);
+
+    //this function is called when the window is resized
+    var MyResize = function () {
+//        var raycaster = new THREE.Raycaster();
+//        var mouse = new THREE.Vector2();
+//        raycaster.setFromCamera(mouse, camera);
+//        var intersects = raycaster.intersectObjects(scene.children);
+//
+//        for (var i = 0; i < intersects.length; i++) {
+//
+//            intersects[i].object.material.color.set(0xff0000);
+////            alert("ffs");
+//        }
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        renderer.setSize(width, height);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.render(scene, camera);
+    };
+
+    //link the resize of the window to the update of the camera
+    window.addEventListener('resize', MyResize);
+
+    //create the material of the cube (basic material)
+    var material_cube = new THREE.MeshLambertMaterial();
+    //set the color of the cube
+    var material_floorPart = new THREE.MeshLambertMaterial();
+    material_cube.color = new THREE.Color(1, 1, 1);
+    material_floorPart.color = new THREE.Color(0.8, 0.8, 0.8);
+    //create the first mesh of a cube
+    var geometry_cube = new THREE.BoxGeometry(1, 1, 1);
+    var cubes = [];
+    //the number of cubes composing the strip
+    var n = 4;
+    //number of loops the moebius strip do
+    var loop = 1;
+    //the displacement along Z if zero is a pure moebius strip
+    var deltaZ = 0;
+    var gridSize = 4;
+    scene.background = new THREE.Color(0x292325);
+
+
+    class Environment {
+        constructor() {
+
+
+            this.time = 200;
+            this.sunlight = new THREE.DirectionalLight(0xffDDCC, 1);
+            this.sunlight.position.set(30, 50, 20);
+            this.sunlight.castShadow = true;
+
+
+            this.sunlight.shadow.mapSize.width = 4096;
+            this.sunlight.shadow.mapSize.height = 4096;
+            this.sunlight.shadowCameraLeft = -300;
+            this.sunlight.shadowCameraRight = 300;
+            this.sunlight.shadowCameraTop = 300;
+            this.sunlight.shadowCameraBottom = -300;
+
+            //scene.add( this.sunlight );
+
+            this.segmentCount = 144;
+            this.radius = 200;
+
+            var segmentCount = this.segmentCount,
+                radius = this.radius,
+                geometry = new THREE.Geometry(),
+                material = new THREE.LineBasicMaterial({color: 0xFFAA77});
+
+            for (var i = 0; i <= segmentCount; i++) {
+                var theta = (i / segmentCount) * Math.PI * 2;
+                geometry.vertices.push(new THREE.Vector3(Math.sin(theta) * radius, Math.cos(theta) * -radius, 0));
+            }
+
+            scene.add(new THREE.LineSegments(geometry, material));
+
+            var geometry = new THREE.SphereGeometry(5, 32, 32);
+            var material = new THREE.MeshBasicMaterial({color: 0xffDD77});
+            this.sphere = new THREE.Mesh(geometry, material);
+
+            var transform = new THREE.Matrix4();
+
+            var theta = (this.time / segmentCount) * Math.PI * 2;
+            this.sunPos = new THREE.Vector3(Math.sin(theta) * radius, Math.cos(theta) * -radius, 0);
+            transform.makeTranslation(this.sunPos.x, this.sunPos.y, this.sunPos.z);
+            this.sphere.applyMatrix(transform);
+
+
+            this.sunlight.position.set(this.sunPos.x, this.sunPos.y, this.sunPos.z);
+            scene.add(this.sunlight);
+            scene.add(this.sphere);
+        }
+
+        update() {
+            var transform = new THREE.Matrix4();
+
+            var segmentCount = this.segmentCount, radius = this.radius;
+            var theta = (this.time / segmentCount) * Math.PI * 2;
+            this.sunPos = new THREE.Vector3(Math.sin(theta) * radius, Math.cos(theta) * -radius, 0);
+            this.sunlight.position.set(this.sunPos.x, this.sunPos.y, this.sunPos.z);
+            this.sphere.position.set(this.sunPos.x, this.sunPos.y, this.sunPos.z);
+            //this.time = time;
+//            transform.makeTranslation(this.sunPos.x, this.sunPos.y, this.sunPos.z);
+//            this.sphere.applyMatrix(transform);
+//            scene.remove(this.sunlight);
+            //scene.remove( sphere );
+//            scene.add(this.sunlight);
+            // scene.add( sphere );
+        }
+    }
+
+    class MaterialLibrary {
+        constructor() {
+            this.wallPlain = new THREE.MeshPhongMaterial();
+            this.wallPlain.color = new THREE.Color(1, .9, .8);
+            // this.wallPlain.castShadow = true;
+            // this.wallPlain.receiveShadow = true;
+        }
+
+    }
+
+    matLib = new MaterialLibrary();
+
+    class Plot {
+        constructor() {
+            this.plotGeom = new THREE.CylinderGeometry(200, 200, 1, 64);
+            this.floorColor = new THREE.Color(0x003300);
+            this.floorMat = new THREE.MeshPhongMaterial();
+            this.floorMat.color = this.floorColor;
+
+            this.partNumber = 0;
+            this.plotMesh = new THREE.Mesh(this.plotGeom, this.floorMat);
+            this.plotMesh.receiveShadow = true;
+            this.plotMesh.castShadow = true;
+            scene.add(this.plotMesh);
+        }
+    }
+
+    plot = new Plot();
+
+
+    class Grid {
+        constructor() {
+            this.matGridLrg = new THREE.LineBasicMaterial({color: 0x53464a});
+            this.matGridSml = new THREE.LineBasicMaterial({color: 0x372f32});
+
+            var dimX = 20;
+            var dimZ = 20;
+
+            for (var x = 0; x <= dimX; x++) {
+                for (var z = 0; z <= dimZ; z++) {
+
+                    var geometry = new THREE.Geometry();
+                    for (var j = 1; j < 10; j++) {
+                        geometry.vertices.push(new THREE.Vector3(-100 + j + z * 10, 0, 100));
+                        geometry.vertices.push(new THREE.Vector3(-100 + j + z * 10, 0, -100));
+                    }
+
+
+                    var geometry2 = new THREE.Geometry();
+                    for (var y = 1; y < 10; y++) {
+                        geometry2.vertices.push(new THREE.Vector3(-100, 0, -100 + y + x * 10));
+                        geometry2.vertices.push(new THREE.Vector3(100, 0, -100 + y + x * 10));
+                    }
+
+
+                    this.gridLineLrgGeomX = new THREE.Geometry();
+                    this.gridLineLrgGeomX.vertices.push(new THREE.Vector3(-100, 0, -100 + x * 10));
+                    this.gridLineLrgGeomX.vertices.push(new THREE.Vector3(100, 0, -100 + x * 10));
+
+                    this.gridLineLrgGeomZ = new THREE.Geometry();
+                    this.gridLineLrgGeomZ.vertices.push(new THREE.Vector3(-100 + z * 10, 0, -100));
+                    this.gridLineLrgGeomZ.vertices.push(new THREE.Vector3(-100 + z * 10, 0, 100));
+
+                    this.gridLineLrgX = new THREE.LineSegments(this.gridLineLrgGeomX, this.matGridLrg);
+                    this.gridLineLrgZ = new THREE.LineSegments(this.gridLineLrgGeomZ, this.matGridLrg);
+
+                    this.gridLineSmlX = new THREE.LineSegments(geometry, this.matGridSml);
+                    this.gridLineSmlZ = new THREE.LineSegments(geometry2, this.matGridSml);
+
+                    if (z != dimZ && x != dimX) {
+                        scene.add(this.gridLineSmlX);
+                        scene.add(this.gridLineSmlZ);
+                    }
+                    scene.add(this.gridLineLrgX);
+                    scene.add(this.gridLineLrgZ);
+
+
+                }
+            }
+        }
+    }
+
+
+    class Floor {
+        constructor(origin, dimensions, rotation) {
+
+            this.origin = new THREE.Matrix4;
+            this.origin = origin;
+            //this.position = position;
+            this.dimensions = dimensions;
+            this.rotation = rotation;
+            this.floorGeom = new THREE.BoxGeometry(this.dimensions.x + .5, 1, this.dimensions.z + .5);
+            this.floorColor = new THREE.Color(0.9, 0.7, 0.5);
+            this.floorMat = new THREE.MeshPhongMaterial();
+            this.floorMat.color = this.floorColor;
+
+            this.floorMesh = new THREE.Mesh(this.floorGeom, this.floorMat);
+            this.floorMesh.receiveShadow = true;
+            this.floorMesh.castShadow = true;
+            this.floorMesh.applyMatrix(this.origin);
+            scene.add(this.floorMesh);
+
+            this.floorBaseMat = new THREE.MeshPhongMaterial();
+            this.floorBaseMat.color = new THREE.Color(1, 0.5, 0.5);
+            this.floorBaseGeom = new THREE.BoxGeometry(this.dimensions.x, 5, this.dimensions.z);
+
+            this.floorBase = new THREE.Mesh(this.floorBaseGeom, this.floorBaseMat);
+            this.floorBase.receiveShadow = true;
+            var floorBaseTranslate = new THREE.Matrix4();
+            floorBaseTranslate.makeTranslation(0, -2.5, 0);
+            floorBaseTranslate.multiply(this.origin);
+            this.floorBase.applyMatrix(floorBaseTranslate);
+            scene.add(this.floorBase);
+
+        }
+    }
+
+    class Opening {
+        constructor(wallOrigin, wallDims, widthPos, heightPos, width, height, active) {
+            //this.materialLibrary = new MaterialLibrary();
+            this.wallOrigin = new THREE.Matrix4();
+            this.wallOrigin.multiply(wallOrigin);
+            this.wallDims = wallDims;
+            this.widthPos = widthPos;
+            this.heightPos = heightPos;
+            this.width = width;
+            this.height = height;
+            this.active = true;
+            //alert(this.wallOrigin.elements);
+
+            this.transPos = new THREE.Matrix4();
+            this.transPos2 = new THREE.Matrix4();
+            this.transPos.multiply(this.wallOrigin);
+            this.transPos2.makeTranslation(this.widthPos, this.heightPos, 0);
+            this.transPos.multiply(this.transPos2);
+
+            this.transTopPos = new THREE.Matrix4();
+            this.transTopPos2 = new THREE.Matrix4();
+            this.transTopPos.multiply(this.wallOrigin);
+            this.transTopPos2.makeTranslation(this.widthPos, this.calcTopTranslate(), 0);
+            this.transTopPos.multiply(this.transTopPos2);
+
+
+            this.transBotPos = new THREE.Matrix4();
+            this.transBotPos2 = new THREE.Matrix4();
+            this.transBotPos.multiply(this.wallOrigin);
+            this.transBotPos2.makeTranslation(this.widthPos, this.calcBotTranslate(), 0);
+            this.transBotPos.multiply(this.transBotPos2);
+
+            //alert(this.wallDims.y);
+            this.render();
+        }
+
+        render() {
+            this.openingWall = new THREE.MeshPhongMaterial();
+            this.openingWall.color = new THREE.Color(1, 1, 0);
+
+
+            this.openingMat = new THREE.MeshBasicMaterial();
+            this.openingMat.color = new THREE.Color(1, 0, 1);
+            this.openingMat.wireframe = true;
+
+            this.openingGeomTop = new THREE.BoxGeometry(this.width, this.calcTopHeight(), this.wallDims.z);
+            this.openingGeomBot = new THREE.BoxGeometry(this.width, this.calcBotHeight(), this.wallDims.z);
+
+            //alert((this.wallDims.y-this.height)/2-this.heightPos);
+            this.openingGeom = new THREE.BoxGeometry(this.width, this.height, this.wallDims.z);
+            this.opening = new THREE.Mesh(this.openingGeom, this.openingMat);
+            this.openingWallTop = new THREE.Mesh(this.openingGeomTop, matLib.wallPlain);
+            this.openingWallBot = new THREE.Mesh(this.openingGeomBot, matLib.wallPlain);
+
+            this.openingWallTop.castShadow = true;
+            this.openingWallTop.receiveShadow = true;
+            this.openingWallBot.castShadow = true;
+            this.openingWallBot.receiveShadow = true;
+
+            this.opening.applyMatrix(this.transPos);
+
+
+            this.openingWallTop.applyMatrix(this.transTopPos);
+            this.openingWallBot.applyMatrix(this.transBotPos);
+            scene.add(this.opening);
+            if (this.calcTopHeight() > 0) {
+                scene.add(this.openingWallTop);
+            }
+            if (this.calcBotHeight() > 0) {
+                scene.add(this.openingWallBot);
+            }
+        }
+
+        calcTopHeight() {
+            return (this.wallDims.y - this.height) / 2 - this.heightPos;
+        }
+
+        calcBotHeight() {
+
+            return (this.wallDims.y - this.height) / 2 + this.heightPos;
+        }
+
+        calcTopTranslate() {
+            //return (this.wallDims.y/2)-(this.height/2)+this.heightPos
+            return this.height / 2 + ((this.wallDims.y - this.height) / 2 + this.heightPos) / 2;
+        }
+
+        calcBotTranslate() {
+            return this.height / 2 - this.height - ((this.wallDims.y - this.height) / 2 - this.heightPos) / 2;
+        }
+    }
+
+    class Wall {
+        constructor(origin, dimensions, openings) {
+            //this is a transform matrix to move the entire wall
+            this.origin = new THREE.Matrix4();
+            this.origin.multiply(origin);
+            //this is an array for openings
+            this.openings = [];
+            //this is array for the sections of wall between openings
+            this.wallSegs = [];
+            //this stores a set of points donting the start/end of the wall and each split
+            this.wallPoints = [];
+            //this is to store the walls meshes
+            this.wallMeshes = [];
+
+            this.dims = dimensions;
+            this.openings.push(new Opening(this.origin, this.dims, -6, 1, 16, 14));
+            //this.openings.push(new Opening(this.origin,this.dims,-1,2,4,8,true));
+            this.openings.push(new Opening(this.origin, this.dims, 9, -3, 10, 22));
+
+            //this creates a series of points to draw wall segs between
+            this.wallPoints.push(-this.dims.x / 2);
+            for (var z = 0; z < this.openings.length; z++) {
+                this.wallPoints.push(this.openings[z].widthPos - this.openings[z].width / 2);
+                this.wallPoints.push(this.openings[z].widthPos + this.openings[z].width / 2);
+            }
+            this.wallPoints.push(this.dims.x / 2);
+
+            for (var z = 0; z < this.wallPoints.length - 1; z++) {
+                //Modulus to skip gaps
+                if (z % 2 == 0) {
+                    var combined = new THREE.Matrix4();
+                    var translate = new THREE.Matrix4();
+                    translate.makeTranslation((this.wallPoints[z] + this.wallPoints[z + 1]) / 2, 0, 0);
+                    combined.multiply(this.origin);
+                    combined.multiply(translate);
+                    //combined.multiply(origin);
+
+                    this.wallSegGeom = new THREE.BoxGeometry(Math.abs(this.wallPoints[z] - this.wallPoints[z + 1]), this.dims.y, this.dims.z);
+                    this.wallSeg = new THREE.Mesh(this.wallSegGeom, matLib.wallPlain);
+
+                    this.wallSeg.castShadow = true;
+                    this.wallSeg.receiveShadow = true;
+
+                    this.wallSeg.applyMatrix(combined);
+                    this.wallSegs.push(this.wallSeg);
+                }
+            }
+            for (var z = 0; z < this.wallSegs.length; z++) {
+
+                scene.add(this.wallSegs[z]);
+            }
+        }
+    }
+
+    class Room {
+        constructor(dimensions, position, rotation) {
+            this.walls = [];
+            this.floor = [];
+            this.gridSize = 1;
+            this.wallThickness = 1;
+            this.wallGeom = new THREE.BoxGeometry(.2, 2 * gridSize, 1 * gridSize);
+            this.wallColor = new THREE.Color(0.8, 0.8, 0.8);
+            this.wallMat = new THREE.MeshPhongMaterial();
+            this.wallMat.color = this.wallColor;
+            this.dimensions = dimensions;
+            this.position = position;
+            this.rotation = rotation;
+
+            this.origin = new THREE.Matrix4();
+            this.origin.makeTranslation(position.x, position.y, position.z);
+
+
+            this.floorGeom = new THREE.BoxGeometry(this.dimensions.x, this.dimensions.y, this.dimensions.z);
+            this.floorColor = new THREE.Color(1, 0.3, 0.5);
+            this.floorMat = new THREE.MeshBasicMaterial();
+            this.floorMat.wireframe = true;
+            this.floorMat.color = this.floorColor;
+            var test = new THREE.Mesh(this.floorGeom, this.floorMat)
+            test.applyMatrix(this.origin);
+            //scene.add(test)
+            //test.applyMatrix(this.origin);)
+
+
+            this.floor = new Floor(this.origin, this.dimensions);
+            //this.floor.generate();
+            this.generateWalls();
+        }
+
+        generateWalls() {
+            for (var i = 0; i < (4); i++) {
+                var combined = new THREE.Matrix4();
+                var tra = new THREE.Matrix4();
+                var rot = new THREE.Matrix4();
+                var sca = new THREE.Matrix4();
+                var traGlobalPos = new THREE.Matrix4();
+                var wallLength;
+                if (i == 0 || i == 2) {
+                    wallLength = this.dimensions.x;
+                    //tra.multiply(this.origin);
+                    tra.makeTranslation(0, this.dimensions.y / 2, (this.dimensions.z / 2) - this.wallThickness / 2);
+                } else {
+                    wallLength = this.dimensions.z;
+                    tra.makeTranslation(0, this.dimensions.y / 2, (this.dimensions.x / 2) - this.wallThickness / 2);
+                }
+                traGlobalPos.makeTranslation(this.position.x, this.position.z, this.position.y);
+                rot.makeRotationY(i * (Math.PI / 2));
+
+                combined.multiply(this.origin);
+                combined.multiply(rot);
+                combined.multiply(tra);
+
+                var test = new THREE.Vector3(wallLength, this.dimensions.y, this.wallThickness);
+                //var test = new THREE.Vector3(20,20,20);
+                //alert("test");
+                //wall = new Wall(combined,30,20);
+                this.walls[i] = new Wall(combined, test, 2);
+                //this.walls[i].applyMatrix(combined);
+                //this.walls[i].geometry.computeBoundingBox();
+                //  this.walls[i].castShadow = true;
+                //this.walls[i].receiveShadow = true;
+                //scene.add(this.walls[i]);
+            }
+        }
+    }
+
+    function roomGen(posX, posY, dimX, dimY) {
+
+        var rotation = new THREE.Vector3(0, 0, 0);
+
+        //hall
+        hall = new Room(new THREE.Vector3(70, 28, 20), new THREE.Vector3(-15, 5, 0), rotation);
+        //bedroom 1
+        bedroom1 = new Room(new THREE.Vector3(50, 28, 50), new THREE.Vector3(-25, 5, -35), rotation);
+        bedroom2 = new Room(new THREE.Vector3(50, 28, 50), new THREE.Vector3(25, 5, -35), rotation);
+        //bathrooms
+        bathroom = new Room(new THREE.Vector3(30, 28, 40), new THREE.Vector3(35, 5, 10), rotation);
+
+        loungeroom = new Room(new THREE.Vector3(70, 28, 60), new THREE.Vector3(-15, 5, 40), rotation);
+
+        kitchen = new Room(new THREE.Vector3(50, 28, 40), new THREE.Vector3(45, 5, 50), rotation);
+
+    }
+
+
+    //the same orbit control
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    var currI = 0;
+
+    //this clear the scene when parameters are updated
+    function ClearScene() {
+        for (i = 0; i < room1.walls.length; i++)
+            scene.remove(room1.walls[i]);
+        for (i = 0; i < room0.walls.length; i++)
+            scene.remove(room0.walls[i]);
+        for (i = 0; i < room3.walls.length; i++)
+            scene.remove(room3.walls[i]);
+    }
+
+    //add keyboard listener
+
+    roomGen();
+    //grid = new Grid();
+    environment = new Environment();
+
+
+    var cameralight = new THREE.PointLight(new THREE.Color(.2, .2, .2), 0.9);
+    camera.add(cameralight);
+    scene.add(camera);
+    scene.add(new THREE.AmbientLight(new THREE.Color(.6, .7, .9), 0.4));
+
+
+    var MyUpdateLoop = function () {
+        requestAnimationFrame(MyUpdateLoop);
+        environment.time += .1;
+        environment.update();
+        //console.log(environment.time);
+        renderer.render(scene, camera);
+    };
+
+
+    requestAnimationFrame(MyUpdateLoop);
+
+    //keyboard functions, change parameters values
+    function myFunction() {
+        ClearScene();
+        gridSize += 1;
+        roomGen();
+    }
+
+    function handleKeyDown(event) {
+    }
+
+    function onMouseMove(event) {
+
+        // calculate mouse position in normalized device coordinates
+        // (-1 to +1) for both components
+
+        mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = -( event.clientY / window.innerHeight ) * 2 + 1;
+        window.addEventListener('mousemove', onMouseMove, false);
+
+        window.requestAnimationFrame(myResize());
+        console.log(c);
+    }
+
+
+</script>
+</body>
+
+</html>
