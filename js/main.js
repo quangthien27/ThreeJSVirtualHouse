@@ -125,7 +125,72 @@ scene.add(new THREE.LineSegments(geometry, material));
   }
 
 
+class ModelLibrary
+{
+  constructor()
+  {
+    this.manager = new THREE.LoadingManager();
+    this.manager.onProgress = function ( item, loaded, total ) {
+        console.log( item, loaded, total );
+    };
 
+	}
+
+  load(modelName,transformMatrix)
+  {
+    //let modelName = "mdl_door_01";
+    let modelPath = "mdl/"
+    let modelMaterialPath = "img/mdl/"
+    let objLoader = new THREE.OBJLoader(this.manager);
+    objLoader.load(modelPath+modelName+".obj", function(object) {
+        var mainMesh;
+        object.traverse(function (child) {
+            if (child instanceof THREE.Mesh) {
+                mainMesh = child;
+            }
+        });
+
+        mainMesh.castShadow = true;
+        mainMesh.receiveShadow = true;
+
+        let textureLoader = new THREE.TextureLoader();
+        mainMesh.material = new THREE.MeshStandardMaterial({
+            map: textureLoader.load(modelMaterialPath+modelName+'_basecolor.png'),
+            normalMap: textureLoader.load(modelMaterialPath+modelName+'_normal.png'),
+            roughnessMap: textureLoader.load(modelMaterialPath+modelName+'_roughness.png'),
+            metalnessMap: textureLoader.load(modelMaterialPath+modelName+'_metallic.png'),
+            aoMap: textureLoader.load(modelMaterialPath+modelName+'_ao.png'),
+
+            //roughness: 1,
+            //metalness: 0,
+            aoMapIntensity: .5,  // The ao map appears to quash the reflectionCube.
+            //envMap: reflectionCube
+        });
+
+        // The fire hydrant uses UDIM, but is able to operate without UDIM via simple
+        // texture coordinate wrapping.  This is because only symmetric parts are placed
+        // in UDIM space, and can re-use the main texture via wrapped coordinates.
+        // https://support.allegorithmic.com/documentation/display/SPDOC/UDIM
+        function wrap(texture) {
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        }
+        wrap(mainMesh.material.map);
+        wrap(mainMesh.material.normalMap);
+        wrap(mainMesh.material.roughnessMap);
+        wrap(mainMesh.material.metalnessMap);
+        wrap(mainMesh.material.aoMap);
+
+        let scale = new THREE.Matrix4();
+        //Scales Model down to decimeters
+        scale.makeScale(.1,.1,.1);
+        transformMatrix.multiply(scale);
+        object.applyMatrix(transformMatrix);
+        scene.add(object);
+        window.mainObject = object;  // for debugging only
+        window.mainMesh = mainMesh;  // for debugging only
+    });
+  }
+}
 
   class MaterialLibrary
   {
@@ -176,7 +241,7 @@ scene.add(new THREE.LineSegments(geometry, material));
         texture.wrapS = texture.wrapT = normal.wrapS = normal.wrapT = roughness.wrapS = roughness.wrapT = metalness.wrapS = metalness.wrapT = true;
 
         //Set the texture repeat scale
-        texture.repeat.set(0.02, 0.02);
+        texture.repeat.set(0.025, 0.025);
 
         //Create new PBR Material
         let material = new THREE.MeshStandardMaterial({ map: texture });
@@ -211,8 +276,21 @@ scene.add(new THREE.LineSegments(geometry, material));
       }
     }
   }
+  class ApertureLibrary
+  {
+    constructor()
+    {
+
+    }
+    load()
+    {
+
+    }
+  }
 
   matLib = new MaterialLibrary();
+  mdlLib = new ModelLibrary();
+  ApertureLib = new ModelLibrary();
 
   class Plot
   {
@@ -361,93 +439,131 @@ scene.add(new THREE.LineSegments(geometry, material));
       this.height = height;
       this.active = true;
 
-      this.transPos = new THREE.Matrix4();
-      this.transPos2 = new THREE.Matrix4();
-      this.transPos.multiply(this.wallOrigin);
-      this.transPos2.makeTranslation(this.widthPos,this.heightPos,0);
-      this.transPos.multiply(this.transPos2);
+      let openingDims = new THREE.Vector3(width,height,wallDims.z)
 
-      this.transTopPos = new THREE.Matrix4();
-      this.transTopPos2 = new THREE.Matrix4();
-      this.transTopPos.multiply(this.wallOrigin);
-      this.transTopPos2.makeTranslation(this.widthPos,this.calcTopTranslate(),0);
-      this.transTopPos.multiply(this.transTopPos2);
+      let topSectionHeight = (this.wallDims.y-this.height)/2-this.heightPos;
+      let topTranslation = this.height/2+((this.wallDims.y-this.height)/2+this.heightPos)/2;
+      let bottomSectionHeight = (this.wallDims.y-this.height)/2+this.heightPos;
+      let bottomTranslation = this.height/2-this.height-((this.wallDims.y-this.height)/2-this.heightPos)/2;
 
-      this.transBotPos = new THREE.Matrix4();
-      this.transBotPos2 = new THREE.Matrix4();
-      this.transBotPos.multiply(this.wallOrigin);
-      this.transBotPos2.makeTranslation(this.widthPos,this.calcBotTranslate(),0);
-      this.transBotPos.multiply(this.transBotPos2);
+      let transPos = new THREE.Matrix4();
+      let transPos2 = new THREE.Matrix4();
+      transPos.multiply(this.wallOrigin);
+      transPos2.makeTranslation(this.widthPos,this.heightPos,wallDims.z/2);
+      transPos.multiply(transPos2);
 
-      this.render();
-    }
-    render()
-    {
-      this.openingWall = new THREE.MeshPhongMaterial();
-      this.openingWall.color = new THREE.Color(1, 1, 0);
+      let transTopPos = new THREE.Matrix4();
+      let transTopPos2 = new THREE.Matrix4();
+      transTopPos.multiply(this.wallOrigin);
+      transTopPos2.makeTranslation(this.widthPos,topTranslation,wallDims.z);
+      transTopPos.multiply(transTopPos2);
 
+      let transBotPos = new THREE.Matrix4();
+      let transBotPos2 = new THREE.Matrix4();
+      transBotPos.multiply(this.wallOrigin);
+      transBotPos2.makeTranslation(this.widthPos,bottomTranslation,wallDims.z);
+      transBotPos.multiply(transBotPos2);
 
       this.openingMat = new THREE.MeshBasicMaterial();
       this.openingMat.color = new THREE.Color(1, 0, 1);
       this.openingMat.wireframe = true;
 
-      this.openingGeomTop = new THREE.PlaneGeometry(this.width,this.calcTopHeight(),this.wallDims.z);
-      //this.openingGeomTop = new THREE.BoxGeometry(this.width,this.calcTopHeight(),this.wallDims.z);
-      let vec = new THREE.Vector3();
-      vec.setFromMatrixPosition(this.transTopPos2);
-      assignUVs(this.openingGeomTop,vec);
+      this.openingGeomTop = new THREE.PlaneGeometry(this.width,topSectionHeight);
+      let vecTop = new THREE.Vector3();
+      vecTop.setFromMatrixPosition(transTopPos2);
+      assignUVs(this.openingGeomTop,vecTop);
+
+      this.openingGeomBot = new THREE.PlaneGeometry(this.width,bottomSectionHeight);
+      let vecBot = new THREE.Vector3();
+      vecBot.setFromMatrixPosition(transBotPos2);
+      assignUVs(this.openingGeomBot,vecBot);
 
 
-      this.openingGeomBot = new THREE.PlaneGeometry(this.width,this.calcBotHeight(),this.wallDims.z);
-      //this.openingGeomTop = new THREE.BoxGeometry(this.width,this.calcTopHeight(),this.wallDims.z);
-      let vec2 = new THREE.Vector3();
-      vec2.setFromMatrixPosition(this.transBotPos2);
-      assignUVs(this.openingGeomBot,vec2);
 
       this.openingGeom = new THREE.BoxGeometry(this.width,this.height,this.wallDims.z);
+      this.mergedWallOpening = new THREE.Geometry();
+      this.mergedWallOpening.applyMatrix(this.wallOrigin)
       this.opening = new THREE.Mesh(this.openingGeom, this.openingMat);
-      this.openingWallTop = new THREE.Mesh(this.openingGeomTop, matLib.load(this.matName));
-      this.openingWallBot = new THREE.Mesh(this.openingGeomBot, matLib.load(this.matName));
 
-      this.openingWallTop.castShadow = true;
-      this.openingWallTop.receiveShadow = true;
-      this.openingWallBot.castShadow = true;
-      this.openingWallBot.receiveShadow = true;
-
-      this.opening.applyMatrix(this.transPos);
-
-
-
-      this.openingWallTop.applyMatrix(this.transTopPos);
-      this.openingWallBot.applyMatrix(this.transBotPos);
-      scene.add(this.opening);
-      if(this.calcTopHeight() > 0)
+      for(var z = 0;z<4;z++)
       {
-          scene.add(this.openingWallTop);
-      }
-      if(this.calcBotHeight() > 0)
-      {
-          scene.add(this.openingWallBot);
-      }
-    }
-    calcTopHeight()
-    {
-      return (this.wallDims.y-this.height)/2-this.heightPos;
-    }
-    calcBotHeight()
-    {
+          let transToSides = new THREE.Matrix4();
+          //let sideMesh =
+          switch(z)
+          {
+              case 0:
+              transToSides.makeTranslation(0,openingDims.y/2,0);
+              this.side = new THREE.PlaneGeometry(openingDims.x,wallDims.z);
+              break;
+              case 1:
+              transToSides.makeTranslation(-openingDims.x/2,0,0);
+              this.side = new THREE.PlaneGeometry(openingDims.y,wallDims.z);
+              break;
+              case 2:
+              transToSides.makeTranslation(0,-openingDims.y/2,0);
+              this.side = new THREE.PlaneGeometry(openingDims.x,wallDims.z);
+              break;
+              case 3:
+              transToSides.makeTranslation(openingDims.x/2,0,0);
+              this.side = new THREE.PlaneGeometry(openingDims.y,wallDims.z);
+              break;
+          }
 
-      return (this.wallDims.y-this.height)/2+this.heightPos;
+          //this.side = new THREE.PlaneGeometry(10,wallDims.z);
+
+          let trans = new THREE.Matrix4();
+          let rotate1 = new THREE.Matrix4();
+          let rotate2 = new THREE.Matrix4();
+
+          rotate1.makeRotationX((Math.PI/2));
+          rotate2.makeRotationY(z*(Math.PI/2));
+
+          trans.multiply(transPos);
+          trans.multiply(transToSides);
+
+          trans.multiply(rotate1);
+          trans.multiply(rotate2);
+
+
+          let vec = new THREE.Vector3();
+          vec.setFromMatrixPosition(trans);
+          assignUVs(this.side,vec);
+
+
+          this.mergedWallOpening.merge(this.side,trans);
+      }
+
+
+      //this.openingWallTop = new THREE.Mesh(this.openingGeomTop, matLib.load(this.matName));
+      //this.openingWallBot = new THREE.Mesh(this.openingGeomBot, matLib.load(this.matName));
+
+      //this.openingWallTop.castShadow = true;
+      //this.openingWallTop.receiveShadow = true;
+      //this.openingWallBot.castShadow = true;
+      //this.openingWallBot.receiveShadow = true;
+
+      this.opening.applyMatrix(transPos);
+
+      mdlLib.load("mdl_door_01",transPos);
+
+    //  this.openingWallTop.applyMatrix(transTopPos);
+      //this.openingWallBot.applyMatrix(transBotPos);
+      //scene.add(this.opening);
+      if(topSectionHeight > 0)
+      {
+          this.mergedWallOpening.merge(this.openingGeomTop,transTopPos);
+      }
+      if(bottomSectionHeight > 0)
+      {
+          this.mergedWallOpening.merge(this.openingGeomBot,transBotPos);
+      }
+
+      let mesh = new THREE.Mesh(this.mergedWallOpening, matLib.load(this.matName));
+      mesh.castShadow = true;
+      mesh.recieveShadow = true;
+      scene.add(mesh);
     }
-    calcTopTranslate()
-    {
-      //return (this.wallDims.y/2)-(this.height/2)+this.heightPos
-      return this.height/2+((this.wallDims.y-this.height)/2+this.heightPos)/2;
-    }
-    calcBotTranslate()
-    {
-      return this.height/2-this.height-((this.wallDims.y-this.height)/2-this.heightPos)/2;
-    }
+
   }
   class Wall
   {
@@ -456,29 +572,30 @@ scene.add(new THREE.LineSegments(geometry, material));
       //this is a transform matrix to move the entire wall
       this.origin = new THREE.Matrix4();
       this.origin.multiply(origin);
+
       //this is an array for openings
       this.openings = openings;
+
       //this is array for the sections of wall between openings
       this.wallSegs = [];
-      //this stores a set of points donting the start/end of the wall and each split
+
+      //this stores a set of points denoting the start/end of the wall and each split
       this.wallPoints = [];
+
       //this is to store the walls meshes
       this.wallGeom = new THREE.Geometry();
 
       this.dims = dimensions;
-      this.dims.x -=2;
-
 
       //this creates a series of points to draw wall segs between
-      this.wallPoints.push(-this.dims.x/2);
-
+      this.wallPoints.push(-this.dims.x/2+1); //start point of the wall
       for(var z = 0;z<this.openings.length;z++)
       {
-
-        this.wallPoints.push(this.openings[z].widthPos-this.openings[z].width/2);
-        this.wallPoints.push(this.openings[z].widthPos+this.openings[z].width/2);
+        this.wallPoints.push(this.openings[z].widthPos-this.openings[z].width/2); //value for start point of the opening
+        this.wallPoints.push(this.openings[z].widthPos+this.openings[z].width/2); //value for end point of the opening
       }
-      this.wallPoints.push(this.dims.x/2);
+      this.wallPoints.push(this.dims.x/2-1); //end point of the wall
+
 
       for(var z = 0;z<this.wallPoints.length-1;z++)
       {
@@ -487,14 +604,17 @@ scene.add(new THREE.LineSegments(geometry, material));
         {
         let combined = new THREE.Matrix4();
         let translate = new THREE.Matrix4();
-        translate.makeTranslation((this.wallPoints[z]+this.wallPoints[z+1])/2,0,0);
+        translate.makeTranslation((this.wallPoints[z]+this.wallPoints[z+1])/2,0,this.dims.z);
         combined.multiply(this.origin);
         combined.multiply(translate);
 
-        this.wallSegGeom = new THREE.BoxGeometry(Math.abs(this.wallPoints[z]-this.wallPoints[z+1]),this.dims.y,this.dims.z);
+        //this.wallSegGeom = new THREE.BoxGeometry(Math.abs(this.wallPoints[z]-this.wallPoints[z+1]),this.dims.y,this.dims.z);
 
-        this.wallSegGeom = new THREE.PlaneGeometry(Math.abs(this.wallPoints[z]-this.wallPoints[z+1]),this.dims.y);
+        this.wallSegGeom = new THREE.PlaneGeometry(Math.abs(this.wallPoints[z+1]-this.wallPoints[z]),this.dims.y);
 
+        //this.outerWallSegGeom = new THREE.PlaneGeometry(Math.abs(this.wallPoints[z+1]-this.wallPoints[z]),-this.dims.y);
+
+        //alert(this.wallPoints[z]-this.wallPoints[z+1]);
         let vec = new THREE.Vector3();
         let test = new THREE.Matrix4();
 
@@ -510,71 +630,40 @@ scene.add(new THREE.LineSegments(geometry, material));
         this.wallSeg.receiveShadow = true;
 
         this.wallSeg.applyMatrix(combined);
-        this.wallSegs.push(this.wallSeg);
 
+        //This if statement only adds the wallseg if it is larger than 0;
+        if(this.wallPoints[z+1]-this.wallPoints[z]>0)
+        {
+        this.wallSegs.push(this.wallSeg);
+        }
         }
       }
       for(var z = 0;z<this.wallSegs.length;z++)
       {
-
         scene.add(this.wallSegs[z]);
       }
     }
   }
 
-  class Light
-  {
-      constructor(roomPos) {
-          //New point light, considerably faster than spotlight.
-          let light = new THREE.PointLight(new THREE.Color(1, .95, .9), 1);
-
-          //var spotlight_cube = new THREE.PointLight(new THREE.Color(1, 0.8, 0.8), 5);
-          light.position.set(roomPos.x, roomPos.y + 26, roomPos.z);
-          light.decay = 1;
-          light.distance = 80;
-
-          //Set the shadow map to half the size of default
-          light.shadow.mapSize.width = 256; // default is 512
-          light.shadow.mapSize.height = 256; // default is 512
-          light.castShadow = true;
-
-          scene.add(light);
-      }
-
-  }
-
   class Room {
     constructor(dimensions, position, floorMat, wallMat) {
+
       this.walls = [];
-      this.floor = [];
-      this.gridSize = 1;
       this.wallThickness = 1;
-      //this.wallGeom = new THREE.BoxGeometry(.2, 2 * gridSize, 1 * gridSize);
-      this.wallColor = new THREE.Color(0.8, 0.8, 0.8);
+
       this.wallMat = wallMat;
-      //this.wallMat.color = this.wallColor;
+
       this.dimensions = dimensions;
       this.position = position;
-      //this.rotation = rotation;
 
       this.origin = new THREE.Matrix4();
       this.origin.makeTranslation(position.x,position.y,position.z);
 
       this.openings = [];
 
-
-
-
-      this.floorGeom = new THREE.BoxGeometry(this.dimensions.x, this.dimensions.y, this.dimensions.z);
-      this.floorColor = new THREE.Color(1, 0.3, 0.5);
-      this.floorMat = new THREE.MeshBasicMaterial();
-      this.floorMat.wireframe = true;
-      this.floorMat.color = this.floorColor;
-
-
       this.floor = new Floor(this.origin, this.dimensions,floorMat);
-      this.light = new Light(this.position);
-      //this.floor.generate();
+
+      this.generateLight()
       this.generateWalls();
     }
     generateWalls() {
@@ -589,10 +678,10 @@ scene.add(new THREE.LineSegments(geometry, material));
         if (i == 0 || i == 2) {
           wallLength = this.dimensions.x;
           //tra.multiply(this.origin);
-          tra.makeTranslation(0, this.dimensions.y/2, (-this.dimensions.z / 2)+this.wallThickness);
+          tra.makeTranslation(0, this.dimensions.y/2, (-this.dimensions.z / 2));
         } else {
           wallLength = this.dimensions.z;
-          tra.makeTranslation(0, this.dimensions.y/2, (-this.dimensions.x / 2)+this.wallThickness);
+          tra.makeTranslation(0, this.dimensions.y/2, (-this.dimensions.x / 2));
         }
         traGlobalPos.makeTranslation(this.position.x,this.position.z,this.position.y);
         rot.makeRotationY(i * (Math.PI / 2));
@@ -601,20 +690,24 @@ scene.add(new THREE.LineSegments(geometry, material));
         combined.multiply(rot);
         combined.multiply(tra);
 
-        var test = new THREE.Vector3(wallLength,this.dimensions.y,this.wallThickness);
+        let wallDims = new THREE.Vector3(wallLength,this.dimensions.y,this.wallThickness);
         //var test = new THREE.Vector3(20,20,20);
         //alert("test");
         //wall = new Wall(combined,30,20);
         if(i==1)
         {
-        this.openings.push(new Opening(combined,test,0,-4,10,20,this.wallMat));
+        this.openings.push(new Opening(combined,wallDims,-10,-3.5,9.4,21,this.wallMat));
+        //this.openings.push(new Opening(combined,wallDims,-6,-3.5,9.4,21,this.wallMat));
+        //this.openings.push(new Opening(combined,wallDims,6,-3.5,9.4,21,this.wallMat));
+        //this.openings.push(new Opening(combined,wallDims,16,-3.5,9.4,21,this.wallMat));
         }
-        if(i==3)
+        if(i==2)
         {
-          this.openings.push(new Opening(combined,test,-12,1,10,12,this.wallMat));
-          this.openings.push(new Opening(combined,test,12,1,10,12,this.wallMat));
+          this.openings.push(new Opening(combined,wallDims,-12,1,12,16,this.wallMat));
+          this.openings.push(new Opening(combined,wallDims,12,1,12,16,this.wallMat));
         }
-        this.walls[i] = new Wall(combined,test,this.openings,this.wallMat);
+
+        this.walls[i] = new Wall(combined,wallDims,this.openings,this.wallMat);
 
         //this.walls[i].applyMatrix(combined);
         //this.walls[i].geometry.computeBoundingBox();
@@ -622,20 +715,46 @@ scene.add(new THREE.LineSegments(geometry, material));
         //this.walls[i].receiveShadow = true;
         //scene.add(this.walls[i]);
       }
+
+    }
+    generateLight()
+    {
+      this.light = new THREE.PointLight(new THREE.Color(1, .95, .9), 1);
+
+      this.light.position.set(this.position.x, this.position.y + 26, this.position.z);
+      this.light.decay = 1;
+      this.light.distance = 80;
+
+      //Set the shadow map to half the size of default
+      this.light.shadow.mapSize.width = 256; // default is 512
+      this.light.shadow.mapSize.height = 256; // default is 512
+      this.light.castShadow = true;
+
+      scene.add(this.light);
+    }
+
+    lightToggle()
+    {
+        if(this.light.visible)
+        {
+          this.light.visible = false;
+        }
+        else {
+          this.light.visible = true;
+        }
     }
   }
 
   function assignUVs(geometry, worldoffset) {
 
       geometry.faceVertexUvs[0] = [];
-      if (worldoffset)
+
+      //If noo world offset is set, set it to a blank vector3
+      if (!worldoffset)
       {
-
-      }
-      else {
-
         worldoffset = new THREE.Vector3();
       }
+
       geometry.faces.forEach(function (face) {
 
           var components = ['x', 'z', 'y'].sort(function (a, b) {
@@ -661,26 +780,35 @@ scene.add(new THREE.LineSegments(geometry, material));
 
 
 
-  function roomGen(posX, posY, dimX, dimY) {
-
+  class House
+  {
+  constructor(posX, posY, dimX, dimY)
+    {
     var rotation = new THREE.Vector3(0, 0, 0);
 
     //Room List (Vector3 Room dimensions, Vector 3 Room position, String Floor material name, String Wall material Name )
 
     //hall
-    hall = new Room(new THREE.Vector3(70, 28, 20), new THREE.Vector3(-15, 5, 0), "material_woodfloor_01","material_wall_01");
-    //bedroom 1
-    bedroom1 = new Room(new THREE.Vector3(70, 28, 70), new THREE.Vector3(-35, 5, -45), "material_carpet_01","material_wall_01");
-    bedroom2 = new Room(new THREE.Vector3(70, 28, 70), new THREE.Vector3(35, 5, -45), "material_carpet_01","material_wall_01");
-    //bathrooms
-    bathroom = new Room(new THREE.Vector3(30, 28, 40), new THREE.Vector3(35, 5, 10), "material_tiles_02","material_walltiles_02");
-    //Loungeroom
-    loungeroom = new Room(new THREE.Vector3(70, 28, 80), new THREE.Vector3(-15, 5, 50), "material_woodfloor_01","material_wall_01");
-    //Kitchen
-    kitchen = new Room(new THREE.Vector3(50, 28, 60), new THREE.Vector3(45, 5, 60), "material_tiles_01","material_wall_01");
+    let hallApertures = [];
 
+    //hallApertures.push(new Aperture(0,"name",new THREE.Vector3(-15, 5, 0),true)) //Aperture arguments int side,string name,vector3 location,boolean enableModel
+    this.hall = new Room(new THREE.Vector3(70, 28, 20), new THREE.Vector3(-15, 5, 0), "material_woodfloor_01","material_wall_01");
+    //bedroom 1
+    this.bedroom1 = new Room(new THREE.Vector3(70, 28, 70), new THREE.Vector3(-35, 5, -45), "material_carpet_01","material_wall_01");
+    this.bedroom2 = new Room(new THREE.Vector3(70, 28, 70), new THREE.Vector3(35, 5, -45), "material_carpet_01","material_wall_01");
+    //bathrooms
+    this.bathroom = new Room(new THREE.Vector3(30, 28, 40), new THREE.Vector3(35, 5, 10), "material_tiles_02","material_walltiles_02");
+    //Loungeroom
+    this.loungeroom = new Room(new THREE.Vector3(70, 28, 80), new THREE.Vector3(-15, 5, 50), "material_woodfloor_01","material_wall_01");
+    //Kitchen
+    this.kitchen = new Room(new THREE.Vector3(50, 28, 60), new THREE.Vector3(45, 5, 60), "material_tiles_01","material_brickwall_01");
+  }
+  lightToggle()
+  {
+    this.loungeroom.lightToggle();
   }
 
+  }
 
 
 
@@ -700,7 +828,8 @@ scene.add(new THREE.LineSegments(geometry, material));
   }
   //add keyboard listener
 
-  roomGen();
+
+  house = new House();
   //grid = new Grid();
   environment = new Environment();
 
