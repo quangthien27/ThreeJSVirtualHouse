@@ -25,11 +25,22 @@
             <div class="button" onclick="turnLightOff()">Turn light off</div>
         </li>
         <li>
-            <div class="button" onclick="house.lightToggle()">Turn light off</div>
+            <div class="button" onclick="houseLighting.lightToggle(0)"></div>
         </li>
     </ul>
 </div>
+<div id="lightPanel">
+  House Lighting
+    <ul id="lightPanelList">
 
+    </ul>
+</div>
+<script>
+for(var z = 0;z<houseLighting.sceneLights.length;z+=2)
+{
+document.getElementById("lightPanelList").innerHTML += '<li><div class="button" onclick="houseLighting.lightToggle('+z+')">'+houseLighting.sceneLights[z+1]+'</div></li>';
+}
+</script>
 
 </body>
 </html>

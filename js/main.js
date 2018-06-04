@@ -264,6 +264,7 @@ class ModelLibrary
     //function to load a material from a string
     load(matName)
     {
+
       //Cycle through material list
       for (var i=0; i<this.materialList.length; i++)
       {
@@ -276,21 +277,62 @@ class ModelLibrary
       }
     }
   }
-  class ApertureLibrary
+
+
+  class SceneLights
   {
     constructor()
     {
+        this.sceneLights = []
+        //let vec = new THREE.Vector3(2,2,2);
+      //this.addRoomLight(vec);
+    }
+    addRoomLight(position, roomName)
+    {
+      this.position = position;
+      this.light = new THREE.PointLight(new THREE.Color(1, .95, .9), 1);
+
+      this.light.position.set(this.position.x, this.position.y + 26, this.position.z);
+      this.light.decay = 1;
+      this.light.distance = 80;
+
+      //Set the shadow map to half the size of default
+      this.light.shadow.mapSize.width = 256; // default is 512
+      this.light.shadow.mapSize.height = 256; // default is 512
+      this.light.castShadow = true;
+
+      this.sceneLights.push(this.light,roomName);
+    }
+    update()
+    {
+        for(var x = 0; x <this.sceneLights.length;x+=2)
+        {
+        scene.add(this.sceneLights[x]);
+        }
+
 
     }
-    load()
+    lightToggle(x)
     {
-
+      for(var z = 0; z <this.sceneLights.length;z++)
+      {
+        if(x == z)
+        {
+        if(this.sceneLights[z].distance == 80)
+        {
+          this.sceneLights[z].distance = .1;
+        }
+        else {
+          this.sceneLights[z].distance = 80;
+        }
+      }
+      }
     }
   }
 
   matLib = new MaterialLibrary();
   mdlLib = new ModelLibrary();
-  ApertureLib = new ModelLibrary();
+  houseLighting = new SceneLights();
 
   class Plot
   {
@@ -646,7 +688,7 @@ class ModelLibrary
   }
 
   class Room {
-    constructor(dimensions, position, floorMat, wallMat) {
+    constructor(name,dimensions, position, floorMat, wallMat) {
 
       this.walls = [];
       this.wallThickness = 1;
@@ -663,13 +705,13 @@ class ModelLibrary
 
       this.floor = new Floor(this.origin, this.dimensions,floorMat);
 
-      this.generateLight()
+      houseLighting.addRoomLight(position,name);
       this.generateWalls();
     }
     generateWalls() {
       for (var i = 0; i < (4); i++) {
         this.openings = [];
-        var combined = new THREE.Matrix4();
+        let wallTransform = new THREE.Matrix4();
         var tra = new THREE.Matrix4();
         var rot = new THREE.Matrix4();
         var sca = new THREE.Matrix4();
@@ -686,28 +728,30 @@ class ModelLibrary
         traGlobalPos.makeTranslation(this.position.x,this.position.z,this.position.y);
         rot.makeRotationY(i * (Math.PI / 2));
 
-        combined.multiply(this.origin);
-        combined.multiply(rot);
-        combined.multiply(tra);
+        wallTransform.multiply(this.origin);
+        wallTransform.multiply(rot);
+        wallTransform.multiply(tra);
 
         let wallDims = new THREE.Vector3(wallLength,this.dimensions.y,this.wallThickness);
         //var test = new THREE.Vector3(20,20,20);
         //alert("test");
         //wall = new Wall(combined,30,20);
+
+
         if(i==1)
         {
-        this.openings.push(new Opening(combined,wallDims,-10,-3.5,9.4,21,this.wallMat));
-        //this.openings.push(new Opening(combined,wallDims,-6,-3.5,9.4,21,this.wallMat));
+        this.openings.push(new Opening(wallTransform,wallDims,-10,-3.5,9.4,21,this.wallMat));
+        //this.openings.push(new Opening(wallTransform,combined,wallDims,-6,-3.5,9.4,21,this.wallMat));
         //this.openings.push(new Opening(combined,wallDims,6,-3.5,9.4,21,this.wallMat));
         //this.openings.push(new Opening(combined,wallDims,16,-3.5,9.4,21,this.wallMat));
         }
         if(i==2)
         {
-          this.openings.push(new Opening(combined,wallDims,-12,1,12,16,this.wallMat));
-          this.openings.push(new Opening(combined,wallDims,12,1,12,16,this.wallMat));
+          this.openings.push(new Opening(wallTransform,wallDims,-12,1,12,16,this.wallMat));
+          this.openings.push(new Opening(wallTransform,wallDims,12,1,12,16,this.wallMat));
         }
 
-        this.walls[i] = new Wall(combined,wallDims,this.openings,this.wallMat);
+        this.walls[i] = new Wall(wallTransform,wallDims,this.openings,this.wallMat);
 
         //this.walls[i].applyMatrix(combined);
         //this.walls[i].geometry.computeBoundingBox();
@@ -717,32 +761,7 @@ class ModelLibrary
       }
 
     }
-    generateLight()
-    {
-      this.light = new THREE.PointLight(new THREE.Color(1, .95, .9), 1);
 
-      this.light.position.set(this.position.x, this.position.y + 26, this.position.z);
-      this.light.decay = 1;
-      this.light.distance = 80;
-
-      //Set the shadow map to half the size of default
-      this.light.shadow.mapSize.width = 256; // default is 512
-      this.light.shadow.mapSize.height = 256; // default is 512
-      this.light.castShadow = true;
-
-      scene.add(this.light);
-    }
-
-    lightToggle()
-    {
-        if(this.light.visible)
-        {
-          this.light.visible = false;
-        }
-        else {
-          this.light.visible = true;
-        }
-    }
   }
 
   function assignUVs(geometry, worldoffset) {
@@ -792,16 +811,18 @@ class ModelLibrary
     let hallApertures = [];
 
     //hallApertures.push(new Aperture(0,"name",new THREE.Vector3(-15, 5, 0),true)) //Aperture arguments int side,string name,vector3 location,boolean enableModel
-    this.hall = new Room(new THREE.Vector3(70, 28, 20), new THREE.Vector3(-15, 5, 0), "material_woodfloor_01","material_wall_01");
+    this.hall = new Room("hall", new THREE.Vector3(70, 28, 20), new THREE.Vector3(-15, 5, 0), "material_woodfloor_01","material_wall_01");
     //bedroom 1
-    this.bedroom1 = new Room(new THREE.Vector3(70, 28, 70), new THREE.Vector3(-35, 5, -45), "material_carpet_01","material_wall_01");
-    this.bedroom2 = new Room(new THREE.Vector3(70, 28, 70), new THREE.Vector3(35, 5, -45), "material_carpet_01","material_wall_01");
+    this.bedroom1 = new Room("bedroom 1", new THREE.Vector3(50, 28, 70), new THREE.Vector3(-25, 5, -45), "material_carpet_01","material_wall_01");
+    this.bedroom2 = new Room("bedroom 2", new THREE.Vector3(70, 28, 70), new THREE.Vector3(35, 5, -45), "material_carpet_01","material_wall_01");
     //bathrooms
-    this.bathroom = new Room(new THREE.Vector3(30, 28, 40), new THREE.Vector3(35, 5, 10), "material_tiles_02","material_walltiles_02");
+    this.bathroom = new Room("Bathroom", new THREE.Vector3(50, 28, 40), new THREE.Vector3(45, 5, 10), "material_tiles_02","material_walltiles_02");
     //Loungeroom
-    this.loungeroom = new Room(new THREE.Vector3(70, 28, 80), new THREE.Vector3(-15, 5, 50), "material_woodfloor_01","material_wall_01");
+    this.loungeroom = new Room("Lounge Room",new THREE.Vector3(70, 28, 80), new THREE.Vector3(-15, 5, 50), "material_woodfloor_01","material_wall_01");
     //Kitchen
-    this.kitchen = new Room(new THREE.Vector3(50, 28, 60), new THREE.Vector3(45, 5, 60), "material_tiles_01","material_brickwall_01");
+    this.kitchen = new Room("Kitchen",new THREE.Vector3(50, 28, 60), new THREE.Vector3(45, 5, 60), "material_tiles_01","material_brickwall_01");
+
+    houseLighting.update();
   }
   lightToggle()
   {
