@@ -3,11 +3,15 @@
   /*jshint esversion: 6 */
   var scene = new THREE.Scene();
 
+  var sky, sunSphere, objects = [];
+
   //create the perspective camera
   //for parameters see https://threejs.org/docs/#api/cameras/PerspectiveCamera
-  var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+  var camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 10, 2000000 );
+  camera.position.set( 100, 100, 200 );
+
   //set the position of the camera
-  camera.position.set(100, 100, 100);
+  // camera.position.set(100, 100, 100);
   //and the looking direction
   camera.lookAt(0, 0, 1);
   //create the webgl renderer
@@ -20,14 +24,16 @@
   document.body.appendChild(renderer.domElement);
   //this fucntion is called when the window is resized
   var MyResize = function() {
+      raycaster = new THREE.Raycaster();
+      var mouse = new THREE.Vector2();
     raycaster.setFromCamera( mouse, camera );
     var intersects = raycaster.intersectObjects( scene.children );
 
-for ( var i = 0; i < intersects.length; i++ ) {
+// for ( var i = 0; i < intersects.length; i++ ) {
 
-  intersects[ i ].object.material.color.set( 0xff0000 );
-  alert("ffs");
-}
+  // intersects[ i ].object.material.color.set( 0xff0000 );
+  // alert("ffs");
+// }
     var width = window.innerWidth;
     var height = window.innerHeight;
     renderer.setSize(width, height);
@@ -55,12 +61,184 @@ for ( var i = 0; i < intersects.length; i++ ) {
   var gridSize = 4;
   scene.background = new THREE.Color(0x292325);
 
+  var initSky = function(){
+      // Add Sky
+      // sky = new THREE.Sky();
+      // sky.scale.setScalar(450000);
+      // scene.add(sky);
+      //
+      // // Add Sun Helper
+      // sunSphere = new THREE.Mesh(
+      //     new THREE.SphereBufferGeometry(20000, 16, 8),
+      //     new THREE.MeshBasicMaterial({color: 0xffffff})
+      // );
+      // sunSphere.position.y = -700000;
+      // sunSphere.visible = false;
+      // scene.add(sunSphere);
+
+      // LIGHTS
+
+      // hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.6 );
+      // hemiLight.color.setHSL( 0.6, 1, 0.6 );
+      // hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
+      // hemiLight.position.set( 0, 50, 0 );
+      // scene.add( hemiLight );
+      //
+      // hemiLightHelper = new THREE.HemisphereLightHelper( hemiLight, 10 );
+      // scene.add( hemiLightHelper );
+
+      //
+
+      // dirLight = new THREE.DirectionalLight( 0xffffff, 1 );
+      // dirLight.color.setHSL( 0.1, 1, 0.95 );
+      // dirLight.position.set( -1, 1.75, 1 );
+      // dirLight.position.multiplyScalar( 30 );
+      // scene.add( dirLight );
+      //
+      // dirLight.castShadow = true;
+      //
+      // dirLight.shadow.mapSize.width = 2048;
+      // dirLight.shadow.mapSize.height = 2048;
+      //
+      // var d = 50;
+      //
+      // dirLight.shadow.camera.left = -d;
+      // dirLight.shadow.camera.right = d;
+      // dirLight.shadow.camera.top = d;
+      // dirLight.shadow.camera.bottom = -d;
+      //
+      // dirLight.shadow.camera.far = 3500;
+      // dirLight.shadow.bias = -0.0001;
+      //
+      // dirLightHeper = new THREE.DirectionalLightHelper( dirLight, 10 );
+      // scene.add( dirLightHeper );
+
+      // GROUND
+
+      var groundGeo = new THREE.PlaneBufferGeometry( 10000, 10000 );
+      var groundMat = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x050505 } );
+      groundMat.color.setHSL( 0.095, 1, 0.75 );
+
+      var ground = new THREE.Mesh( groundGeo, groundMat );
+      ground.rotation.x = -Math.PI/2;
+      // ground.position.y = -33;
+      scene.add( ground );
+
+      ground.receiveShadow = true;
+
+      // SKYDOME
+
+      scene.fog = new THREE.Fog( scene.background, 1, 5000 );
+      var vertexShader = document.getElementById( 'vertexShader' ).textContent;
+      var fragmentShader = document.getElementById( 'fragmentShader' ).textContent;
+      var uniforms = {
+          topColor:    { value: new THREE.Color( 0x0077ff ) },
+          bottomColor: { value: new THREE.Color( 0xffffff ) },
+          offset:      { value: 33 },
+          exponent:    { value: 0.6 }
+      };
+      // uniforms.topColor.value.copy( hemiLight.color );
+
+      scene.fog.color.copy( uniforms.bottomColor.value );
+
+      var skyGeo = new THREE.SphereBufferGeometry( 4000, 32, 15 );
+      var skyMat = new THREE.ShaderMaterial( { vertexShader: vertexShader, fragmentShader: fragmentShader, uniforms: uniforms, side: THREE.BackSide } );
+
+      var sky = new THREE.Mesh( skyGeo, skyMat );
+      scene.add( sky );
+
+      /// GUI
+
+      // var effectController = {
+      //     turbidity: 10,
+      //     rayleigh: 2,
+      //     mieCoefficient: 0.005,
+      //     mieDirectionalG: 0.8,
+      //     luminance: 1,
+      //     inclination: 0.49, // elevation / inclination
+      //     azimuth: 0.25, // Facing front,
+      //     sun: !true
+      // };
+      //
+      // var distance = 400000;
+      //
+      // function guiChanged() {
+      //
+      //     var uniforms = sky.material.uniforms;
+      //     uniforms.turbidity.value = effectController.turbidity;
+      //     uniforms.rayleigh.value = effectController.rayleigh;
+      //     uniforms.luminance.value = effectController.luminance;
+      //     uniforms.mieCoefficient.value = effectController.mieCoefficient;
+      //     uniforms.mieDirectionalG.value = effectController.mieDirectionalG;
+      //
+      //     var theta = Math.PI * ( effectController.inclination - 0.5 );
+      //     var phi = 2 * Math.PI * ( effectController.azimuth - 0.5 );
+      //
+      //     sunSphere.position.x = distance * Math.cos(phi);
+      //     sunSphere.position.y = distance * Math.sin(phi) * Math.sin(theta);
+      //     sunSphere.position.z = distance * Math.sin(phi) * Math.cos(theta);
+      //
+      //     sunSphere.visible = effectController.sun;
+      //
+      //     uniforms.sunPosition.value.copy(sunSphere.position);
+      //
+      //     // renderer.render(scene, camera);
+      //
+      // }
+      //
+      // var gui = new dat.GUI();
+      //
+      // gui.add(effectController, "turbidity", 1.0, 20.0, 0.1).onChange(guiChanged);
+      // gui.add(effectController, "rayleigh", 0.0, 4, 0.001).onChange(guiChanged);
+      // gui.add(effectController, "mieCoefficient", 0.0, 0.1, 0.001).onChange(guiChanged);
+      // gui.add(effectController, "mieDirectionalG", 0.0, 1, 0.001).onChange(guiChanged);
+      // gui.add(effectController, "luminance", 0.0, 2).onChange(guiChanged);
+      // gui.add(effectController, "inclination", 0, 1, 0.0001).onChange(guiChanged);
+      // gui.add(effectController, "azimuth", 0, 1, 0.0001).onChange(guiChanged);
+      // gui.add(effectController, "sun").onChange(guiChanged);
+      //
+      // guiChanged();
+  };
+
+  var adaptDragAndDrop = function () {
+      var geometry = new THREE.BoxBufferGeometry( 40, 40, 40 );
+
+      for (var i = 0; i < 10; i++) {
+          var object = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({color: Math.random() * 0xffffff}));
+          object.position.x = Math.random() * 1000 - 500;
+          object.position.y = Math.random() * 600 - 300;
+          object.position.z = Math.random() * 800 - 400;
+          object.rotation.x = Math.random() * 2 * Math.PI;
+          object.rotation.y = Math.random() * 2 * Math.PI;
+          object.rotation.z = Math.random() * 2 * Math.PI;
+          object.scale.x = Math.random() * 2 + 1;
+          object.scale.y = Math.random() * 2 + 1;
+          object.scale.z = Math.random() * 2 + 1;
+          object.castShadow = true;
+          object.receiveShadow = true;
+          scene.add(object);
+          objects.push(object);
+      }
+
+      var dragControls = new THREE.DragControls(objects, camera, renderer.domElement);
+      dragControls.addEventListener('dragstart', function (event) {
+          controls.enabled = false;
+      });
+      dragControls.addEventListener('dragend', function (event) {
+          controls.enabled = true;
+      });
+
+  };
+
+  adaptDragAndDrop();
+
 
   class Environment
   {
     constructor()
     {
 
+        this.defaultRadius = 2500;
 
       this.time = 0;
       this.sunlight = new THREE.DirectionalLight( 0xffDDCC, 1 );
@@ -70,18 +248,18 @@ for ( var i = 0; i < intersects.length; i++ ) {
 
       this.sunlight.shadow.mapSize.width = 4096;
       this.sunlight.shadow.mapSize.height = 4096;
-      this.sunlight.shadowCameraLeft = -300;
-      this.sunlight.shadowCameraRight = 300;
-      this.sunlight.shadowCameraTop = 300;
-      this.sunlight.shadowCameraBottom = -300;
+      this.sunlight.shadow.camera.left = -300;
+      this.sunlight.shadow.camera.right = 300;
+      this.sunlight.shadow.camera.top = 300;
+      this.sunlight.shadow.camera.bottom = -300;
 
       //scene.add( this.sunlight );
 
 
-      var segmentCount = 144,
-  radius = 200,
+      var segmentCount = 500,
+  radius = this.defaultRadius,
   geometry = new THREE.Geometry(),
-  material = new THREE.LineBasicMaterial({ color: 0xFFAA77 });
+  material = new THREE.LineBasicMaterial({ color: 0x000000 });
 
 for (var i = 0; i <= segmentCount; i++) {
   var theta = (i / segmentCount) * Math.PI * 2;
@@ -90,8 +268,8 @@ for (var i = 0; i <= segmentCount; i++) {
 
 scene.add(new THREE.LineSegments(geometry, material));
 
-      var geometry = new THREE.SphereGeometry( 2, 32, 32 );
-      var material = new THREE.MeshBasicMaterial( {color: 0xffDD77} );
+      geometry = new THREE.SphereBufferGeometry( this.defaultRadius / 40, 32, 32 );
+      material = new THREE.MeshBasicMaterial( {color: 0xffDD77} );
       this.sphere = new THREE.Mesh( geometry, material );
 
       var transform = new THREE.Matrix4();
@@ -105,21 +283,25 @@ scene.add(new THREE.LineSegments(geometry, material));
       this.sunlight.position.set(this.sunPos.x,this.sunPos.y,this.sunPos.z);
       scene.add( this.sunlight );
       scene.add( this.sphere );
+
+        initSky();
+
     }
     update()
     {
       var transform = new THREE.Matrix4();
 
-      var segmentCount = 144,radius = 50;
+      var segmentCount = 500,radius = this.defaultRadius;
       var theta = (this.time / segmentCount) * Math.PI * 2;
       this.sunPos = new THREE.Vector3(Math.sin(theta) * radius,Math.cos(theta) * -radius,0);
       this.sunlight.position.set(this.sunPos.x,this.sunPos.y,this.sunPos.z);
+      this.sphere.position.set(this.sunPos.x,this.sunPos.y,this.sunPos.z);
       //this.time = time;
-      transform.makeTranslation(this.sunPos.x,this.sunPos.y,this.sunPos.z);
+      // transform.makeTranslation(this.sunPos.x,this.sunPos.y,this.sunPos.z);
       //this.sphere.applyMatrix(transform);
-      scene.remove( this.sunlight );
+      // scene.remove( this.sunlight );
       //scene.remove( sphere );
-      scene.add( this.sunlight );
+      // scene.add( this.sunlight );
      // scene.add( sphere );
     }
   }
@@ -350,7 +532,7 @@ class ModelLibrary
 
     }
   }
-  plot = new Plot();
+  // plot = new Plot();
 
 
   class Grid {
@@ -837,6 +1019,10 @@ class ModelLibrary
 
   //the same orbit control
   controls = new THREE.OrbitControls(camera, renderer.domElement);
+  // controls.minPolarAngle = 0;
+  controls.maxPolarAngle = Math.PI/2 - Math.PI/180 * 10;
+  controls.maxDistance = 500;
+  controls.minDistance = 50;
   var currI = 0;
   //this clear the scene when parameters are updated
   function ClearScene() {
@@ -868,7 +1054,7 @@ class ModelLibrary
 
   var MyUpdateLoop = function() {
     requestAnimationFrame(MyUpdateLoop);
-    //environment.time +=.1;
+    environment.time +=.5;
     environment.update();
     //console.log(environment.time);
     renderer.render(scene, camera);
