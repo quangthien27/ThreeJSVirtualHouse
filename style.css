@@ -60,3 +60,15 @@ li {
     cursor: url(https://i.imgur.com/IqKacMa.png), auto;
     border-left: 10px solid white;
 }
+
+#group-info {
+    padding: 10px;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    right: 0;
+}
+
+#group-info li {
+    display: inline-block;
+}

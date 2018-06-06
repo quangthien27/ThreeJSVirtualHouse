@@ -199,6 +199,97 @@
 
   adaptDragAndDrop();
 
+  // var base_mesh, switch_mesh;
+  // var lightState = "on";
+  // var animateTo = 0.12;
+  //
+  // function createSwitch() {
+  //
+  //     material_flat = new THREE.MeshPhongMaterial({
+  //         color: 0x0066CC,
+  //         shading: THREE.FlatShading,
+  //         shininess: 400,
+  //         specular: 0x050505,
+  //     });
+  //     material_solid = new THREE.MeshBasicMaterial({
+  //         color: 0x70C8E3,
+  //         shading: THREE.SmoothShading,
+  //     });
+  //     material_phong = new THREE.MeshPhongMaterial({
+  //         color: 0xFFFFFf,
+  //         shininess: 0,
+  //         shading: THREE.FlatShading,
+  //     });
+  //     material_wood_flipped = new THREE.MeshPhongMaterial({
+  //         color: 0x996600,
+  //         shading: THREE.FlatShading,
+  //         side: THREE.BackSide
+  //     });
+  //     material_metal = new THREE.MeshPhongMaterial({
+  //         color: 0x999999,
+  //         shininess: 100,
+  //         shading: THREE.SmoothShading,
+  //     });
+  //     material_plastic = new THREE.MeshPhongMaterial({
+  //         color: 0xFFFFFF,
+  //         shading: THREE.FlatShading,
+  //     });
+  //
+  //
+  //     var screw_mesh = new THREE.Mesh(new THREE.CylinderGeometry(20, 25, 20, 32), material_metal);
+  //     screw_mesh.position.z = 0
+  //     screw_mesh.position.x = -200
+  //     screw_mesh.rotation.x = 1.5
+  //     screw_mesh.castShadow = true;
+  //
+  //     var screw_mesh_2 = new THREE.Mesh(new THREE.CylinderGeometry(20, 25, 20, 32), material_metal);
+  //     screw_mesh_2.position.z = 0
+  //     screw_mesh_2.position.x = 200
+  //     screw_mesh_2.rotation.x = 1.5
+  //     screw_mesh_2.castShadow = true;
+  //
+  //     base_mesh = new THREE.Mesh(new THREE.BoxGeometry(600, 600, 10), material_plastic);
+  //     base_mesh.castShadow = true;
+  //     base_mesh.receiveShadow = true;
+  //     switch_mesh = new THREE.Mesh(new THREE.BoxGeometry(120, 240, 40), material_plastic);
+  //     switch_mesh.castShadow = true;
+  //     switch_mesh.receiveShadow = true;
+  //
+  //     switch_mesh.rotation.x = -0.2;
+  //
+  //     scene.add(base_mesh);
+  //     scene.add(switch_mesh);
+  //     scene.add(screw_mesh);
+  //     scene.add(screw_mesh_2);
+  //
+  // }
+  //
+  // createSwitch();
+  //
+  // function onMouseDownSwitch(e) {
+  //
+  //     if (lightState == "on") {
+  //         houseLighting.lightsOff(2);
+  //         lightState = "off"
+  //         // light.intensity = 0.1;
+  //         // dirLight.intensity = 0.2;
+  //         animateTo = -0.12
+  //         // $('.noselect').css('color', 'black');
+  //         //$('#scene').css('background', '#132a46');
+  //         //switch_mesh.rotation.x = 0.1;
+  //     } else {
+  //         lightState = "on";
+  //         houseLighting.lightsOn(2);
+  //         // light.intensity = 0.3;
+  //         // dirLight.intensity = 0.8;
+  //         animateTo = 0.12;
+  //         // $('.noselect').css('color', 'white');
+  //         //$('#scene').css('background', '#334E6E');
+  //         //switch_mesh.rotation.x = -0.1;
+  //     }
+  // }
+  //
+  // document.addEventListener('mousedown', onMouseDownSwitch, false);
 
   class Environment
   {
@@ -1152,6 +1243,15 @@ class ModelLibrary
         environment.time += effectController.sunSpeed;
         environment.update();
     }
+
+      // if(switch_mesh.rotation.x >= animateTo){
+      //     switch_mesh.rotation.x += -0.02;
+      // }
+      //
+      // if(switch_mesh.rotation.x <= animateTo){
+      //     switch_mesh.rotation.x += 0.02;
+      // }
+
     //console.log(environment.time);
     renderer.render(scene, camera);
   };
