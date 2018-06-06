@@ -64,48 +64,6 @@ var loop = 1;
 
 scene.background = new THREE.Color(0x292325);
 
-function initSky() {
-    // AXIS HELPER
-
-    axis = new THREE.AxesHelper(10000);
-    axis.visible = effectController.enableAxis;
-    scene.add(axis);
-
-    // GROUND
-
-    var loader = new THREE.TextureLoader();
-    var groundTexture = loader.load('img/grasslight-big.jpg');
-    groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
-    groundTexture.repeat.set(120, 120);
-    groundTexture.anisotropy = 16;
-    // var groundMaterial = new THREE.MeshLambertMaterial( { map: groundTexture } );
-    var groundMaterial = new THREE.MeshPhongMaterial({map: groundTexture});
-    var ground = new THREE.Mesh(new THREE.PlaneBufferGeometry(10000, 10000), groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
-
-
-    // SKYDOME
-
-    scene.fog = new THREE.Fog(scene.background, 1, 5000);
-    var vertexShader = document.getElementById('vertexShader').textContent;
-    var fragmentShader = document.getElementById('fragmentShader').textContent;
-    var uniforms = {
-        topColor: {value: new THREE.Color(0x0077ff)},
-        bottomColor: {value: new THREE.Color(0xffffff)},
-        offset: {value: 33},
-        exponent: {value: 0.6}
-    };
-
-    scene.fog.color.copy(uniforms.bottomColor.value);
-    var skyGeo = new THREE.SphereBufferGeometry(4000, 32, 15);
-    var skyMat = new THREE.ShaderMaterial({vertexShader: vertexShader, fragmentShader: fragmentShader, uniforms: uniforms, side: THREE.BackSide});
-
-    var sky = new THREE.Mesh(skyGeo, skyMat);
-    scene.add(sky);
-}
-
 function guiChanged() {
     if (ceilings.length > 0) {
         ceilings.forEach(function (ceiling) {
@@ -173,14 +131,12 @@ function assignUVs(geometry, worldoffset) {
     geometry.uvsNeedUpdate = true;
 }
 
-//the same orbit control
+// ORBIT CONTROL
 controls = new THREE.OrbitControls(camera, renderer.domElement);
-// controls.minPolarAngle = 0;
 controls.maxPolarAngle = Math.PI / 2 - Math.PI / 180 * 5;
 controls.maxDistance = 500;
 controls.minDistance = 50;
 
-//add keyboard listener
 house = new House();
 environment = new Environment();
 
