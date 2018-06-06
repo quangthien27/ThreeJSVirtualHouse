@@ -4,42 +4,38 @@
     <meta charset="UTF-8">
     <title>Assignment: Virtual House</title>
 
-    <link rel="stylesheet" href="./style.css" type="text/css">
+    <link rel="stylesheet" href="css/style.css" type="text/css">
     <link href='https://fonts.googleapis.com/css?family=Alegreya Sans SC' rel='stylesheet'>
 
-
-    <script src="js/three.min.js"></script>
-    <script src="js/dat.gui.min.js"></script>
+    <script src="js/lib/three.min.js"></script>
+    <script src="js/lib/dat.gui.min.js"></script>
     <script src="js/controls/OrbitControls.js"></script>
-    <script src="js/DragControls.js"></script>
-    <script src="js/OBJLoader.js"></script>
-    <script src="js/MTLLoader.js"></script>
-    <script src="js/PLYLoader.js"></script>
+    <script src="js/controls/DragControls.js"></script>
+    <script src="js/loaders/OBJLoader.js"></script>
+    <script src="js/loaders/MTLLoader.js"></script>
+    <script src="js/loaders/PLYLoader.js"></script>
+    <script src="js/classes/ApertureLibrary.js"></script>
+    <script src="js/classes/ApertureModel.js"></script>
+    <script src="js/classes/Environment.js"></script>
+    <script src="js/classes/Floor.js"></script>
+    <script src="js/classes/House.js"></script>
+    <script src="js/classes/HouseLightManager.js"></script>
+    <script src="js/classes/MaterialLibrary.js"></script>
+    <script src="js/classes/ModelLibrary.js"></script>
+    <script src="js/classes/Opening.js"></script>
+    <script src="js/classes/Room.js"></script>
+    <script src="js/classes/Wall.js"></script>
 </head>
 <body>
-<!--info bar with controls-->
-<!--<div id="info">
-    <ul>
-        <li>
-            <div class="button" onclick="regenerateScene()">Regenerate</div>
-        </li>
-        <li>
-            <div class="button" onclick="turnLightOff()">Turn light off</div>
-        </li>
-        <li>
-            <div class="button" onclick="houseLighting.lightToggle(0)"></div>
-        </li>
-    </ul>
-</div>-->
 <div id="lightPanel">
-  <h3 style="color: #fff;">House Lighting</h3>
+    <h3 style="color: #fff;">House Lighting</h3>
     <ul id="lightPanelList">
-      <li>
-          <div class="button" onclick="houseLighting.lightsOn(0)">Turn All Lights on</div>
-      </li>
-      <li>
-          <div class="button" onclick="houseLighting.lightsOff(0)">Turn All Lights off</div>
-      </li>
+        <li>
+            <div class="button" onclick="houseLighting.lightsOn(0)">Turn All Lights on</div>
+        </li>
+        <li>
+            <div class="button" onclick="houseLighting.lightsOff(0)">Turn All Lights off</div>
+        </li>
     </ul>
 
     <h3 style="color: #fff;">Expensive renderings</h3>
@@ -56,24 +52,26 @@
 <div id="group-info">
     <h2 style="color: #fff;">Virtual House</h2>
     <ul>
-        <li>Group 1 members: </li>
+        <li>Group 1 members:</li>
         <li>Roald Braathen: 12624829 |</li>
-        <li>Thien Nguyen: 12783837 | </li>
-        <li>Omer Serhat Dai: 13111733 | </li>
-        <li>Rohit Nair: 12912426 | </li>
+        <li>Thien Nguyen: 12783837 |</li>
+        <li>Omer Serhat Dai: 13111733 |</li>
+        <li>Rohit Nair: 12912426 |</li>
     </ul>
 </div>
+
 <script type="x-shader/x-vertex" id="vertexShader">
-			varying vec3 vWorldPosition;
+        varying vec3 vWorldPosition;
 
-			void main() {
+        void main() {
 
-				vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
-				vWorldPosition = worldPosition.xyz;
+            vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
+            vWorldPosition = worldPosition.xyz;
 
-				gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+            gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
 
-			}
+        }
+
 </script>
 
 <script type="x-shader/x-fragment" id="fragmentShader">
@@ -90,16 +88,16 @@
 				gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h , 0.0), exponent ), 0.0 ) ), 1.0 );
 
 			}
+
 </script>
+
 <script src="js/main.js" type="text/javascript"></script>
 <script src="js/tree.js" type="text/javascript"></script>
 <script src="js/furniture.js" type="text/javascript"></script>
 <script>
-for(var z = 0;z<houseLighting.sceneLights.length;z+=2)
-{
-document.getElementById("lightPanelList").innerHTML += '<li><div class="button" onclick="houseLighting.lightToggle('+z+')">'+houseLighting.sceneLights[z+1]+'</div></li>';
-}
+    for (var z = 0; z < houseLighting.sceneLights.length; z += 2) {
+        document.getElementById("lightPanelList").innerHTML += '<li><div class="button" onclick="houseLighting.lightToggle(' + z + ')">' + houseLighting.sceneLights[z + 1] + '</div></li>';
+    }
 </script>
-
 </body>
 </html>
