@@ -34,7 +34,12 @@
 <div id="lightPanel">
   House Lighting
     <ul id="lightPanelList">
-
+      <li>
+          <div class="button" onclick="houseLighting.lightsOn(0)">Turn All Lights on</div>
+      </li>
+      <li>
+          <div class="button" onclick="houseLighting.lightsOff(0)">Turn All Lights off</div>
+      </li>
     </ul>
 </div>
 <script type="x-shader/x-vertex" id="vertexShader">
