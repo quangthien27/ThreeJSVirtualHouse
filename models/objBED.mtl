@@ -1,0 +1,86 @@
+# 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
+# File Created: 16.03.2013 18:40:22
+
+newmtl wire_224086086
+	Ns 32
+	d 1
+	Tr 0
+	Tf 1 1 1
+	illum 2
+	Ka 0.8784 0.3373 0.3373
+	Kd 0.8784 0.3373 0.3373
+	Ks 0.3500 0.3500 0.3500
+	map_Ka 6990379-flower-texture-like-lace02eyad.jpg
+	map_Kd 6990379-flower-texture-like-lace02eyad.jpg
+
+newmtl wire_177088026
+	Ns 32
+	d 1
+	Tr 0
+	Tf 1 1 1
+	illum 2
+	Ka 0.6941 0.3451 0.1020
+	Kd 0.6941 0.3451 0.1020
+	Ks 0.3500 0.3500 0.3500
+	map_Ka 6990379-flower-texture-like-lace02eyad.jpg
+	map_Kd 6990379-flower-texture-like-lace02eyad.jpg
+
+newmtl wire_061134006
+	Ns 32
+	d 1
+	Tr 0
+	Tf 1 1 1
+	illum 2
+	Ka 0.2392 0.5255 0.0235
+	Kd 0.2392 0.5255 0.0235
+	Ks 0.3500 0.3500 0.3500
+	map_Ka 6990379-flower-texture-like-lace02eyad.jpg
+	map_Kd 6990379-flower-texture-like-lace02eyad.jpg
+	
+newmtl wire_108008136
+	Ns 32
+	d 1
+	Tr 0
+	Tf 1 1 1
+	illum 2
+	Ka 0.4235 0.0314 0.5333
+	Kd 0.4235 0.0314 0.5333
+	Ks 0.3500 0.3500 0.3500
+	map_Ka 6990379-flower-texture-like-lace02eyad.jpg
+	map_Kd 6990379-flower-texture-like-lace02eyad.jpg
+	
+newmtl wire_088199225
+	Ns 32
+	d 1
+	Tr 0
+	Tf 1 1 1
+	illum 2
+	Ka 0.3451 0.7804 0.8824
+	Kd 0.3451 0.7804 0.8824
+	Ks 0.3500 0.3500 0.3500
+	map_Ka 6990379-flower-texture-like-lace02eyad.jpg
+	map_Kd 6990379-flower-texture-like-lace02eyad.jpg
+	
+newmtl wire_127223255
+	Ns 32
+	d 1
+	Tr 0
+	Tf 1 1 1
+	illum 2
+	Ka 0.4980 0.8745 1.0000
+	Kd 0.4980 0.8745 1.0000
+	Ks 0.3500 0.3500 0.3500
+	map_Ka 6990379-flower-texture-like-lace02eyad.jpg
+	map_Kd 6990379-flower-texture-like-lace02eyad.jpg
+	
+newmtl wire_127127063
+	Ns 32
+	d 1
+	Tr 0
+	Tf 1 1 1
+	illum 2
+	Ka 0.4980 0.4980 0.2471
+	Kd 0.4980 0.4980 0.2471
+	Ks 0.3500 0.3500 0.3500
+	map_Ka 6990379-flower-texture-like-lace02eyad.jpg
+	map_Kd 6990379-flower-texture-like-lace02eyad.jpg
