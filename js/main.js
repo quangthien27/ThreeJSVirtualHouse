@@ -13,7 +13,7 @@
       sunSpeed: .5,
       enableCeiling: true,
       enableAxis: false,
-      sunCircling: true,
+      sunCircling: false,
       ambientLightIntensity: 0.4,
   };
 
@@ -802,357 +802,420 @@ class ModelLibrary
 
   class Opening
   {
-    constructor(wallOrigin,wallDims,widthPos,heightPos,width,height,matName,modelName)
-    {
-
-      this.apertureModel = apertureLib.load(modelName);
-
-      this.matName = matName;
-      //this.materialLibrary = new MaterialLibrary();
-      this.wallOrigin = new THREE.Matrix4();
-      this.wallOrigin.multiply(wallOrigin);
-      this.wallDims = wallDims;
-      this.widthPos = widthPos;
-      this.heightPos = heightPos;
-      this.width = this.apertureModel.dims.x;
-      this.height = this.apertureModel.dims.y;
-      this.active = true;
-
-      let openingDims = new THREE.Vector3(this.apertureModel.dims.x,this.apertureModel.dims.y,wallDims.z)
-
-      let topSectionHeight = (this.wallDims.y-this.height)/2-this.heightPos;
-      let topTranslation = this.height/2+((this.wallDims.y-this.height)/2+this.heightPos)/2;
-      let bottomSectionHeight = (this.wallDims.y-this.height)/2+this.heightPos;
-      let bottomTranslation = this.height/2-this.height-((this.wallDims.y-this.height)/2-this.heightPos)/2;
-
-      let transPos = new THREE.Matrix4();
-      let transPos2 = new THREE.Matrix4();
-      transPos.multiply(this.wallOrigin);
-      transPos2.makeTranslation(this.widthPos,this.heightPos,wallDims.z/2);
-      transPos.multiply(transPos2);
-
-      let transTopPos = new THREE.Matrix4();
-      let transTopPos2 = new THREE.Matrix4();
-      transTopPos.multiply(this.wallOrigin);
-      transTopPos2.makeTranslation(this.widthPos,topTranslation,wallDims.z);
-      transTopPos.multiply(transTopPos2);
-
-      let transBotPos = new THREE.Matrix4();
-      let transBotPos2 = new THREE.Matrix4();
-      transBotPos.multiply(this.wallOrigin);
-      transBotPos2.makeTranslation(this.widthPos,bottomTranslation,wallDims.z);
-      transBotPos.multiply(transBotPos2);
-
-      this.openingMat = new THREE.MeshBasicMaterial();
-      this.openingMat.color = new THREE.Color(1, 0, 1);
-      this.openingMat.wireframe = true;
-
-      this.openingGeomTop = new THREE.PlaneGeometry(this.width,topSectionHeight);
-      let vecTop = new THREE.Vector3();
-      vecTop.setFromMatrixPosition(transTopPos2);
-      assignUVs(this.openingGeomTop,vecTop);
-
-      this.openingGeomBot = new THREE.PlaneGeometry(this.width,bottomSectionHeight);
-      let vecBot = new THREE.Vector3();
-      vecBot.setFromMatrixPosition(transBotPos2);
-      assignUVs(this.openingGeomBot,vecBot);
-
-
-
-      this.openingGeom = new THREE.BoxGeometry(this.width,this.height,this.wallDims.z);
-      this.mergedWallOpening = new THREE.Geometry();
-      this.mergedWallOpening.applyMatrix(this.wallOrigin)
-      this.opening = new THREE.Mesh(this.openingGeom, this.openingMat);
-
-      for(var z = 0;z<4;z++)
+      constructor(wallID, widthPos,heightPos,modelName,enableModel)
       {
-          let transToSides = new THREE.Matrix4();
-          //let sideMesh =
-          switch(z)
+
+          //load the aperture model and assign the openings width and height to the Aperture model's width/height.
+          this.apertureModel = apertureLib.load(modelName);
+          this.width = this.apertureModel.dims.x;
+          this.height = this.apertureModel.dims.y;
+
+          //Id of the wall this opening belongs to
+          this.ID = wallID;
+
+          //boolean value for whether to display a model or not.
+          this.enableModel = enableModel;
+
+          this.exterior = false;
+
+          //Matrix to transform the room to it position
+          this.wallOrigin = new THREE.Matrix4();
+
+          //A Matrix defining the dimensions of the room
+          this.wallDims = new THREE.Vector3(0,0,0)
+
+
+          this.widthPos = widthPos;
+          this.heightPos = heightPos;
+      }
+      setDims(dims)
+      {
+          this.wallDims = dims;
+      }
+      setTrans(trans)
+      {
+          this.wallOrigin = trans;
+      }
+      generate()
+      {
+          let openingDims = new THREE.Vector3(this.apertureModel.dims.x, this.apertureModel.dims.y, this.wallDims.z)
+
+          let topSectionHeight = (this.wallDims.y-this.height)/2-this.heightPos;
+          let topTranslation = this.height/2+((this.wallDims.y-this.height)/2+this.heightPos)/2;
+          let bottomSectionHeight = (this.wallDims.y-this.height)/2+this.heightPos;
+          let bottomTranslation = this.height/2-this.height-((this.wallDims.y-this.height)/2-this.heightPos)/2;
+
+          let transPos = new THREE.Matrix4();
+          let transPos2 = new THREE.Matrix4();
+          transPos.multiply(this.wallOrigin);
+          transPos2.makeTranslation(this.widthPos,this.heightPos,this.wallDims.z/2);
+          transPos.multiply(transPos2);
+
+          let transTopPos = new THREE.Matrix4();
+          let transTopPos2 = new THREE.Matrix4();
+          transTopPos.multiply(this.wallOrigin);
+          transTopPos2.makeTranslation(this.widthPos, topTranslation, this.wallDims.z);
+          transTopPos.multiply(transTopPos2);
+
+          let transBotPos = new THREE.Matrix4();
+          let transBotPos2 = new THREE.Matrix4();
+          transBotPos.multiply(this.wallOrigin);
+          transBotPos2.makeTranslation(this.widthPos, bottomTranslation, this.wallDims.z);
+          transBotPos.multiply(transBotPos2);
+
+
+
+
+          //interior opening wall geometry
+          this.openingGeomTop = new THREE.PlaneGeometry(this.width,topSectionHeight);
+          let vecTop = new THREE.Vector3();
+          vecTop.setFromMatrixPosition(transTopPos2);
+          assignUVs(this.openingGeomTop,vecTop);
+
+          this.openingGeomBot = new THREE.PlaneGeometry(this.width,bottomSectionHeight);
+          let vecBot = new THREE.Vector3();
+          vecBot.setFromMatrixPosition(transBotPos2);
+          assignUVs(this.openingGeomBot, vecBot);
+
+          //Exterior opening wall geometry
+
+
+          let exteriorTranslateTop = new THREE.Matrix4();
+          let extTopTra = new THREE.Matrix4();
+          let extTopRot = new THREE.Matrix4();
+          extTopTra.makeTranslation(0, 0, 1);
+          extTopRot.makeRotationY(Math.PI);
+
+          exteriorTranslateTop.multiply(transTopPos);
+          exteriorTranslateTop.multiply(extTopRot);
+          exteriorTranslateTop.multiply(extTopTra);
+
+          this.exteriorOpeningGeomTop = new THREE.PlaneGeometry(this.width,topSectionHeight);
+          let extVecTop = new THREE.Vector3();
+          extVecTop.setFromMatrixPosition(transTopPos2);
+          assignUVs(this.exteriorOpeningGeomTop, extVecTop);
+
+
+          let exteriorTranslateBot = new THREE.Matrix4();
+          let extBotTra = new THREE.Matrix4();
+          let extBotRot = new THREE.Matrix4();
+          extBotTra.makeTranslation(0, 0, 1);
+          extBotRot.makeRotationY(Math.PI);
+
+          exteriorTranslateBot.multiply(transBotPos);
+          exteriorTranslateBot.multiply(extBotRot);
+          exteriorTranslateBot.multiply(extBotTra);
+
+          this.exteriorOpeningGeomBot = new THREE.PlaneGeometry(this.width,bottomSectionHeight);
+          let extVecBot = new THREE.Vector3();
+          extVecBot.setFromMatrixPosition(transBotPos2);
+          assignUVs(this.exteriorOpeningGeomBot, extVecBot);
+
+
+          if (this.enableModel)
           {
-              case 0:
-              transToSides.makeTranslation(0,openingDims.y/2,0);
-              this.side = new THREE.PlaneGeometry(openingDims.x,wallDims.z);
-              break;
-              case 1:
-              transToSides.makeTranslation(-openingDims.x/2,0,0);
-              this.side = new THREE.PlaneGeometry(openingDims.y,wallDims.z);
-              break;
-              case 2:
-              transToSides.makeTranslation(0,-openingDims.y/2,0);
-              this.side = new THREE.PlaneGeometry(openingDims.x,wallDims.z);
-              break;
-              case 3:
-              transToSides.makeTranslation(openingDims.x/2,0,0);
-              this.side = new THREE.PlaneGeometry(openingDims.y,wallDims.z);
-              break;
+              mdlLib.load(this.apertureModel.modelName, this.apertureModel.materialName, transPos);
           }
 
-          //this.side = new THREE.PlaneGeometry(10,wallDims.z);
+          this.mergedWallOpening = new THREE.Geometry();
+          this.mergedWallOpening.applyMatrix(this.wallOrigin)
 
-          let trans = new THREE.Matrix4();
-          let rotate1 = new THREE.Matrix4();
-          let rotate2 = new THREE.Matrix4();
-
-          rotate1.makeRotationX((Math.PI/2));
-          rotate2.makeRotationY(z*(Math.PI/2));
-
-          trans.multiply(transPos);
-          trans.multiply(transToSides);
-
-          trans.multiply(rotate1);
-          trans.multiply(rotate2);
+          this.mergedExteriorWallOpening = new THREE.Geometry();
+          this.mergedExteriorWallOpening.applyMatrix(this.wallOrigin)
 
 
-          let vec = new THREE.Vector3();
-          vec.setFromMatrixPosition(trans);
-          assignUVs(this.side,vec);
+
+          this.generateOpeningMesh(transPos, openingDims);
+          if (this.exterior)
+          {
+              this.generateOpeningMesh(transPos, openingDims, this.exterior);
+          }
 
 
-          this.mergedWallOpening.merge(this.side,trans);
+          //This loads the correct model for the aperture
+
+
+          if(topSectionHeight > 0)
+          {
+              this.mergedWallOpening.merge(this.openingGeomTop, transTopPos);
+              this.mergedExteriorWallOpening.merge(this.exteriorOpeningGeomTop, exteriorTranslateTop);
+          }
+          if(bottomSectionHeight > 0)
+          {
+              this.mergedWallOpening.merge(this.openingGeomBot, transBotPos);
+              this.mergedExteriorWallOpening.merge(this.exteriorOpeningGeomBot, exteriorTranslateBot);
+          }
+
+          this.geometry = this.mergedWallOpening;
+          this.exteriorGeometry = this.mergedExteriorWallOpening;
+
       }
-
-
-      this.opening.applyMatrix(transPos);
-
-      mdlLib.load(this.apertureModel.modelName,this.apertureModel.materialName,transPos);
-
-      if(topSectionHeight > 0)
+      generateOpeningMesh(transPos,openingDims,exteriorMesh)
       {
-          this.mergedWallOpening.merge(this.openingGeomTop,transTopPos);
-      }
-      if(bottomSectionHeight > 0)
-      {
-          this.mergedWallOpening.merge(this.openingGeomBot,transBotPos);
-      }
+          for (var z = 0; z < 4; z++) {
+              let transToSides = new THREE.Matrix4();
 
-      let mesh = new THREE.Mesh(this.mergedWallOpening, matLib.load(this.matName));
-      mesh.castShadow = true;
-      mesh.recieveShadow = true;
-      //scene.add(mesh);
-      this.geometry = this.mergedWallOpening;
-    }
+              //Set the translate and model dimensions for each side of the opening
+              switch (z) {
+                  case 0:
+                      transToSides.makeTranslation(0, openingDims.y / 2, 0);
+                      this.side = new THREE.PlaneGeometry(openingDims.x, this.wallDims.z);
+                      break;
+                  case 1:
+                      transToSides.makeTranslation(-openingDims.x / 2, 0, 0);
+                      this.side = new THREE.PlaneGeometry(openingDims.y, this.wallDims.z);
+                      break;
+                  case 2:
+                      transToSides.makeTranslation(0, -openingDims.y / 2, 0);
+                      this.side = new THREE.PlaneGeometry(openingDims.x, this.wallDims.z);
+                      break;
+                  case 3:
+                      transToSides.makeTranslation(openingDims.x / 2, 0, 0);
+                      this.side = new THREE.PlaneGeometry(openingDims.y, this.wallDims.z);
+                      break;
+              }
 
+              let trans = new THREE.Matrix4();
+              let rotate1 = new THREE.Matrix4();
+              let rotate2 = new THREE.Matrix4();
+              let exteriorTranslate = new THREE.Matrix4();
+              if (exteriorMesh)
+              {
+                  exteriorTranslate.makeTranslation(0, 0, -1);
+              }
+              rotate1.makeRotationX((Math.PI / 2));
+              rotate2.makeRotationY(z * (Math.PI / 2));
+
+              trans.multiply(transPos);
+              trans.multiply(exteriorTranslate);
+              trans.multiply(transToSides);
+
+              trans.multiply(rotate1);
+              trans.multiply(rotate2);
+
+              let vec = new THREE.Vector3();
+              vec.setFromMatrixPosition(trans);
+              assignUVs(this.side, vec);
+
+              if (exteriorMesh) {
+                  this.mergedExteriorWallOpening.merge(this.side, trans);
+              }
+              else {
+                  this.mergedWallOpening.merge(this.side, trans);
+              }
+
+          }
+      }
   }
+
   class Wall
   {
-    constructor(origin, dimensions,exterior, openings, matName)
-    {
-      //this is a transform matrix to move the entire wall
-      this.origin = new THREE.Matrix4();
-
-      this.flip = 1;
-      this.dims = dimensions;
-      this.matName = matName;
-      this.origin.multiply(origin);
-      if(exterior)
+      constructor(origin, dimensions,exterior, openings, matName)
       {
-        let translate = new THREE.Matrix4();
-        translate.makeTranslation(0,0,0);
-        let rotate = new THREE.Matrix4();
-        rotate.makeRotationY(Math.PI);
-        this.origin.multiply(translate);
-        this.origin.multiply(rotate);
-        this.flip =-1;
-        this.dims.z+=1;
-        this.dims.x+=this.dims.z*2+2;
-        this.matName  = "material_brickwall_01";
+          //this is a transform matrix to move the entire wall
+          this.origin = new THREE.Matrix4();
+
+          this.flip = 1;
+          this.dims = dimensions;
+          this.matName = matName;
+          this.origin.multiply(origin);
+
+          //this is an array for openings
+          this.openings = openings;
+
+          //this is array for the sections of wall between openings
+          this.wallSegs = [];
+
+          //this stores a set of points denoting the start/end of the wall and each split
+          this.wallPoints = [];
+
+          //this is to store the walls geometry
+          this.geometry = new THREE.Geometry();
+          this.exteriorGeometry = new THREE.Geometry();
+
+          //this creates a series of points to draw wall segs between
+          this.wallPoints.push(this.flip*(-this.dims.x/2)); //start point of the wall
+          for(var z = 0;z<this.openings.length;z++)
+          {
+              this.geometry.merge(this.openings[z].geometry);
+              this.exteriorGeometry.merge(this.openings[z].exteriorGeometry);
+
+              this.wallPoints.push(this.flip*(this.openings[z].widthPos-this.openings[z].width/2)); //value for start point of the opening
+              this.wallPoints.push(this.flip*(this.openings[z].widthPos+this.openings[z].width/2)); //value for end point of the opening
+          }
+          this.wallPoints.push(this.flip*(this.dims.x/2)); //end point of the wall
+
+          for(var z = 0;z<this.wallPoints.length-1;z++)
+          {
+              //Modulus to skip gaps
+              if(z % 2 == 0)
+              {
+                  let combined = new THREE.Matrix4();
+                  let translate = new THREE.Matrix4();
+                  translate.makeTranslation((this.wallPoints[z]+this.wallPoints[z+1])/2,0,this.dims.z);
+                  combined.multiply(this.origin);
+                  combined.multiply(translate);
+
+                  this.wallSegGeom = new THREE.PlaneGeometry(Math.abs(this.wallPoints[z + 1] - this.wallPoints[z]), this.dims.y);
+
+                  //make a vector from the rooms transform Matrix to offset UVW maps
+                  let vec = new THREE.Vector3();
+                  vec.setFromMatrixPosition(translate);
+                  assignUVs(this.wallSegGeom,vec);
+
+                  this.geometry.merge(this.wallSegGeom, combined);
+
+                  if (exterior)
+                  {
+                      let extTranslate = new THREE.Matrix4();
+                      let trans2 = new THREE.Matrix4();
+                      let rotate = new THREE.Matrix4();
+
+                      trans2.makeTranslation(0, 0, -1);
+                      rotate.makeRotationX(Math.PI);
+
+
+                      extTranslate.multiply(combined);
+                      extTranslate.multiply(trans2);
+                      extTranslate.multiply(rotate);
+
+                      this.extWallSegGeom = new THREE.PlaneGeometry(Math.abs(this.wallPoints[z + 1] - this.wallPoints[z]), this.dims.y);
+
+                      let vec = new THREE.Vector3();
+                      vec.setFromMatrixPosition(extTranslate);
+                      assignUVs(this.extWallSegGeom, vec);
+                      this.exteriorGeometry.merge(this.extWallSegGeom, extTranslate)
+                  }
+              }
+          }
+
+
+
+
+          this.testMesh2 = new THREE.Mesh(this.exteriorGeometry, matLib.load("material_brickwall_01"));
+          this.testMesh2.castShadow = true;
+          this.testMesh2.receiveShadow = true;
+          scene.add(this.testMesh2);
+
+
+          this.testMesh = new THREE.Mesh(this.geometry, matLib.load(this.matName));
+          this.testMesh.castShadow = true;
+          this.testMesh.receiveShadow = true;
+          scene.add(this.testMesh);
+          this.capWall();
       }
-      else {
-        this.dims.x-=this.dims.z*2;
-      }
-      //this is an array for openings
-      this.openings = openings;
-
-      //this is array for the sections of wall between openings
-      this.wallSegs = [];
-
-      //this stores a set of points denoting the start/end of the wall and each split
-      this.wallPoints = [];
-
-      //this is to store the walls geometry
-      this.geometry = new THREE.Geometry();
-
-
-
-      //this creates a series of points to draw wall segs between
-
-
-      this.wallPoints.push(this.flip*(-this.dims.x/2)); //start point of the wall
-      for(var z = 0;z<this.openings.length;z++)
+      capWall()
       {
-        this.geometry.merge(this.openings[z].geometry);
-        this.wallPoints.push(this.flip*(this.openings[z].widthPos-this.openings[z].width/2)); //value for start point of the opening
-        this.wallPoints.push(this.flip*(this.openings[z].widthPos+this.openings[z].width/2)); //value for end point of the opening
+          let material = new THREE.MeshBasicMaterial( {color: 0x333333} );
+          this.wallTopGeom = new THREE.PlaneGeometry(this.dims.x,this.dims.z);
+          this.transWallTop = new THREE.Matrix4();
+          this.transWallTopRot = new THREE.Matrix4();
+          this.transWallTop2 = new THREE.Matrix4();
+          this.transWallTop.makeTranslation(0,this.dims.y/2,0);
+          this.transWallTop2.makeTranslation(0,-this.dims.z/2,0);
+          this.transWallTopRot.makeRotationX(-Math.PI/2)
+          this.transWallTop.multiply(this.origin);
+          this.transWallTop.multiply(this.transWallTopRot);
+          this.transWallTop.multiply(this.transWallTop2);
+          this.wallTop = new THREE.Mesh(this.wallTopGeom, material);
+          this.wallTop.applyMatrix(this.transWallTop);
+          scene.add(this.wallTop);
       }
-      this.wallPoints.push(this.flip*(this.dims.x/2)); //end point of the wall
-
-
-
-
-
-      for(var z = 0;z<this.wallPoints.length-1;z++)
-      {
-        //Modulus to skip gaps
-        if(z % 2 == 0)
-        {
-        let combined = new THREE.Matrix4();
-        let translate = new THREE.Matrix4();
-        translate.makeTranslation((this.wallPoints[z]+this.wallPoints[z+1])/2,0,this.dims.z);
-        combined.multiply(this.origin);
-        combined.multiply(translate);
-
-        //this.wallSegGeom = new THREE.BoxGeometry(Math.abs(this.wallPoints[z]-this.wallPoints[z+1]),this.dims.y,this.dims.z);
-
-        this.wallSegGeom = new THREE.PlaneGeometry(Math.abs(this.wallPoints[z+1]-this.wallPoints[z]),this.dims.y);
-
-        //this.outerWallSegGeom = new THREE.PlaneGeometry(Math.abs(this.wallPoints[z+1]-this.wallPoints[z]),-this.dims.y);
-
-        //alert(this.wallPoints[z]-this.wallPoints[z+1]);
-        let vec = new THREE.Vector3();
-        let test = new THREE.Matrix4();
-
-        test = combined;
-        //test.rotation.set(0,0,0);
-        vec.setFromMatrixPosition(translate);
-        assignUVs(this.wallSegGeom,vec);
-
-        this.geometry.merge(this.wallSegGeom,combined)
-
-        //this.wallSeg = new THREE.Mesh(this.wallSegGeom, matLib.load(matName));
-
-        //this.wallSeg.castShadow = true;
-        //this.wallSeg.receiveShadow = true;
-
-        //this.wallSeg.applyMatrix(combined);
-
-        //This if statement only adds the wallseg if it is larger than 0;
-        //if(this.wallPoints[z+1]-this.wallPoints[z]>0)
-        //{
-        this.wallSegs.push(this.wallSeg);
-        //}
-        }
-      }
-      for(var z = 0;z<this.wallSegs.length;z++)
-      {
-        //scene.add(this.wallSegs[z]);
-      }
-
-
-
-      this.testMesh = new THREE.Mesh(this.geometry, matLib.load(this.matName ));
-      this.testMesh = new THREE.Mesh(this.geometry);
-      this.testMesh.castShadow = true;
-      this.testMesh.receiveShadow = true;
-      scene.add(this.testMesh);
-      this.capWall();
-    }
-    capWall()
-    {
-      let material = new THREE.MeshBasicMaterial( {color: 0x333333} );
-      this.wallTopGeom = new THREE.PlaneGeometry(this.dims.x,this.dims.z);
-      this.transWallTop = new THREE.Matrix4();
-      this.transWallTopRot = new THREE.Matrix4();
-      this.transWallTop2 = new THREE.Matrix4();
-      this.transWallTop.makeTranslation(0,this.dims.y/2,0);
-      this.transWallTop2.makeTranslation(0,-this.dims.z/2,0);
-      this.transWallTopRot.makeRotationX(-Math.PI/2)
-      this.transWallTop.multiply(this.origin);
-      this.transWallTop.multiply(this.transWallTopRot);
-      this.transWallTop.multiply(this.transWallTop2);
-      this.wallTop = new THREE.Mesh(this.wallTopGeom, material);
-      this.wallTop.applyMatrix(this.transWallTop);
-      scene.add(this.wallTop);
-    }
   }
 
+
   class Room {
-    constructor(name,dimensions, position, floorMat, wallMat,exteriorWalls) {
+      constructor(name,dimensions, position, floorMat, wallMat,exteriorWalls, roomOpenings) {
 
-      this.walls = [];
-      this.wallThickness = 1;
-      this.exteriorWalls = exteriorWalls;
-      this.wallMat = wallMat;
+          this.walls = [];
+          this.wallThickness = 1;
+          this.exteriorWallsIDs = exteriorWalls;
+          this.exteriorWalls = [];
 
-      this.dimensions = dimensions;
-      this.position = position;
+          this.wallMat = wallMat;
+          this.exteriorMat = "material_brickwall_01";
 
-      this.origin = new THREE.Matrix4();
-      this.origin.makeTranslation(position.x,position.y,position.z);
+          this.dimensions = dimensions;
+          this.position = position;
 
-      this.openings = [];
+          this.origin = new THREE.Matrix4();
+          this.origin.makeTranslation(position.x,position.y,position.z);
 
-      this.floor = new Floor(this.origin, this.dimensions,floorMat);
+          this.roomOpenings = roomOpenings;
+          this.floor = new Floor(this.origin, this.dimensions,floorMat);
 
-      houseLighting.addRoomLight(position,name);
-      this.generateWalls();
-    }
-
-
-    generateWalls() {
-      for (var i = 0; i < (4); i++) {
-        this.openings = [];
-        let wallTransform = new THREE.Matrix4();
-        var tra = new THREE.Matrix4();
-        var rot = new THREE.Matrix4();
-        var sca = new THREE.Matrix4();
-        var traGlobalPos = new THREE.Matrix4();
-        var wallLength;
-        if (i == 0 || i == 2) {
-          wallLength = this.dimensions.x;
-          //tra.multiply(this.origin);
-          tra.makeTranslation(0, this.dimensions.y/2, (-this.dimensions.z / 2));
-        } else {
-          wallLength = this.dimensions.z;
-          tra.makeTranslation(0, this.dimensions.y/2, (-this.dimensions.x / 2));
-        }
-        traGlobalPos.makeTranslation(this.position.x,this.position.z,this.position.y);
-        rot.makeRotationY(i * (Math.PI / 2));
-
-        wallTransform.multiply(this.origin);
-        wallTransform.multiply(rot);
-        wallTransform.multiply(tra);
-
-        let wallDims = new THREE.Vector3(wallLength,this.dimensions.y,this.wallThickness);
-        //var test = new THREE.Vector3(20,20,20);
-        //alert("test");
-        //wall = new Wall(combined,30,20);
-
-
-        if(i==1)
-        {
-        this.openings.push(new Opening(wallTransform,wallDims,0,-3.5,9.4,21,this.wallMat,"door 01 open wide"));
-        //this.openings.push(new Opening(wallTransform,wallDims,-8,-3.5,9.4,21,this.wallMat,"door 02"));
-        //this.openings.push(new Opening(combined,wallDims,6,-3.5,9.4,21,this.wallMat));
-        //this.openings.push(new Opening(combined,wallDims,16,-3.5,9.4,21,this.wallMat));
-        }
-        if(i==2)
-        {
-          this.openings.push(new Opening(wallTransform,wallDims,-12,-3.5,9.4,21,this.wallMat,"window 01"));
-          //this.openings.push(new Opening(wallTransform,wallDims,-12,1,12,16,this.wallMat,"window 01"));
-          this.openings.push(new Opening(wallTransform,wallDims,12,-3.5,9.4,21,this.wallMat,"window 02"));
-          //this.openings.push(new Opening(wallTransform,wallDims,12,1,12,16,this.wallMat, "window 02"));
-        }
-
-        this.walls.push(new Wall(wallTransform,wallDims,false,this.openings,this.wallMat));
-
-        if(this.exteriorWalls)
-        {
-        if(this.exteriorWalls[i] == true)
-        {
-          this.walls.push(new Wall(wallTransform,wallDims,true,this.openings,this.wallMat));
-        }
-
-
-
+          houseLighting.addRoomLight(position,name);
+          this.generateWalls();
       }
 
 
+      generateWalls() {
+
+          for (var i = 0; i < (4) ; i++) {
+
+              let exterior = false;
+              if (this.exteriorWallsIDs) {
+                  if (this.exteriorWallsIDs[i] == true) {
+
+                      exterior = true;
+                  }
+                  else
+                  {
+                      exterior = false;
+                  }
+              }
+
+              //An array to store only this walls openings.
+              this.wallOpenings = [];
+              this.wallTransform = new THREE.Matrix4();
+              var tra = new THREE.Matrix4();
+              var rot = new THREE.Matrix4();
+              var sca = new THREE.Matrix4();
+              var traGlobalPos = new THREE.Matrix4();
+              var wallLength;
+
+              if (i == 0 || i == 2) {
+                  wallLength = this.dimensions.x;
+                  tra.makeTranslation(0, this.dimensions.y/2, (-this.dimensions.z / 2));
+              } else {
+                  wallLength = this.dimensions.z;
+                  tra.makeTranslation(0, this.dimensions.y/2, (-this.dimensions.x / 2));
+              }
+
+              traGlobalPos.makeTranslation(this.position.x,this.position.z,this.position.y);
+              rot.makeRotationY(i * (Math.PI / 2));
+
+              this.wallTransform.multiply(this.origin);
+              this.wallTransform.multiply(rot);
+              this.wallTransform.multiply(tra);
+
+              this.wallDims = new THREE.Vector3(wallLength, this.dimensions.y, this.wallThickness);
+
+
+              for (var z = 0; z < this.roomOpenings.length; z++) {
+                  if (this.roomOpenings[z].ID == i) {
+                      this.roomOpenings[z].setTrans(this.wallTransform);
+                      this.roomOpenings[z].setDims(this.wallDims);
+                      if(exterior)
+                      {
+                          this.roomOpenings[z].exterior = true;
+                      }
+                      this.roomOpenings[z].setDims(this.wallDims);
+                      this.roomOpenings[z].generate();
+                      this.wallOpenings.push(this.roomOpenings[z]);
+                  }
+              }
+
+              if (exterior) {
+
+                  this.exteriorWalls.push(new Wall(this.wallTransform, this.wallDims, true, this.wallOpenings, this.wallMat));
+              }
+              else
+              {
+                  this.walls.push(new Wall(this.wallTransform, this.wallDims, false, this.wallOpenings, this.wallMat));
+              }
+          }
       }
-
-
-    }
-
   }
 
   function assignUVs(geometry, worldoffset) {
@@ -1192,41 +1255,80 @@ class ModelLibrary
 
   class House
   {
-  constructor(posX, posY, dimX, dimY)
-    {
-    var rotation = new THREE.Vector3(0, 0, 0);
+      constructor(posX, posY, dimX, dimY)
+      {
+          var rotation = new THREE.Vector3(0, 0, 0);
 
-    //Room List (Vector3 Room dimensions, Vector 3 Room position, String Floor material name, String Wall material Name )
+          //Room List (Vector3 Room dimensions, Vector 3 Room position, String Floor material name, String Wall material Name )
 
-    //hall
-    let hallApertures = [];
+          //hall
+          let hallApertures = [];
+          hallApertures.push(new Opening(0, 0, -3.5, "door 01 open wide", false)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          hallApertures.push(new Opening(0, 25, -3.5, "door 01 open wide", false)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          hallApertures.push(new Opening(1, 0, -3.5, "door 01 open", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          hallApertures.push(new Opening(2, 0, -3.5, "door 01 open wide", false)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          hallApertures.push(new Opening(3, 0, -3.5, "door 01 open wide", false)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
 
-    //hallApertures.push(new Aperture(0,"name",new THREE.Vector3(-15, 5, 0),true)) //Aperture arguments int side,string name,vector3 location,boolean enableModel
-    let hallExteriorWalls = [false,true,false,false];
-    this.hall = new Room("hall", new THREE.Vector3(70, 28, 20), new THREE.Vector3(-15, 5, 0), "material_woodfloor_01","material_wall_01",hallExteriorWalls);
-    //bedroom 1
-    let bedroom1ExteriorWalls = [true,true,false,false];
-    this.bedroom1 = new Room("bedroom 1", new THREE.Vector3(50, 28, 70), new THREE.Vector3(-25, 5, -45), "material_carpet_01","material_wall_01",bedroom1ExteriorWalls);
-    //let bedroomApertures = [new wallAperture("door 01",1,new THREE.Vector3(-25, 5, 0))]
-    let bedroom2ExteriorWalls = [true,false,false,true];
-    this.bedroom2 = new Room("bedroom 2", new THREE.Vector3(70, 28, 70), new THREE.Vector3(35, 5, -45), "material_carpet_01","material_wall_01",bedroom2ExteriorWalls);
-    //bathrooms
+          let hallExteriorWalls = [false, true, false, false];
+          this.hall = new Room("hall", new THREE.Vector3(70, 28, 20), new THREE.Vector3(-15, 5, 0), "material_woodfloor_01","material_wall_01",hallExteriorWalls,hallApertures);
 
-    let bathroomExteriorWalls = [false,false,false,true];
-    this.bathroom = new Room("Bathroom", new THREE.Vector3(50, 28, 40), new THREE.Vector3(45, 5, 10), "material_tiles_02","material_walltiles_02",bathroomExteriorWalls);
-    //Loungeroom
-    let loungeroomExteriorWalls = [false,true,true,false];
-    this.loungeroom = new Room("Lounge Room",new THREE.Vector3(70, 28, 80), new THREE.Vector3(-15, 5, 50), "material_woodfloor_01","material_wall_01",loungeroomExteriorWalls);
-    //Kitchen
-    let kitchenExteriorWalls = [false,false,true,true];
-    this.kitchen = new Room("Kitchen",new THREE.Vector3(50, 28, 60), new THREE.Vector3(45, 5, 60), "material_tiles_01","material_wall_01",kitchenExteriorWalls);
 
-    houseLighting.update();
-  }
-  lightToggle()
-  {
-    this.loungeroom.lightToggle();
-  }
+          //bedroom 1
+          let bedroomApertures = [];
+          bedroomApertures.push(new Opening(0, 0, 0, "window 01", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          bedroomApertures.push(new Opening(1, 0, 0, "window 01", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          bedroomApertures.push(new Opening(2, -10, -3.5, "door 01 open", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          let bedroom1ExteriorWalls = [true, true, false, false];
+          this.bedroom1 = new Room("bedroom 1", new THREE.Vector3(50, 28, 70), new THREE.Vector3(-25, 5, -45), "material_carpet_01", "material_wall_01", bedroom1ExteriorWalls, bedroomApertures);
+
+
+          //let bedroomApertures = [new wallAperture("door 01",1,new THREE.Vector3(-25, 5, 0))]
+          let bedroom2Apertures = [];
+          bedroom2Apertures.push(new Opening(0, -15, 0, "window 01", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          bedroom2Apertures.push(new Opening(0, 15, 0, "window 01", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          bedroom2Apertures.push(new Opening(3, -15, 0, "window 01", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          bedroom2Apertures.push(new Opening(3, 15, 0, "window 01", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          bedroom2Apertures.push(new Opening(2, 25, -3.5, "door 02 open", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+
+          let bedroom2ExteriorWalls = [true,false,false,true];
+          this.bedroom2 = new Room("bedroom 2", new THREE.Vector3(70, 28, 70), new THREE.Vector3(35, 5, -45), "material_carpet_01", "material_wall_01", bedroom2ExteriorWalls, bedroom2Apertures);
+
+
+          //bathrooms
+          let bathroomApertures = [];
+          bathroomApertures.push(new Opening(1, 10, -3.5, "door 02 open", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          bathroomApertures.push(new Opening(3, 0, 2, "window 02", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          let bathroomExteriorWalls = [false,false,false,true];
+          this.bathroom = new Room("Bathroom", new THREE.Vector3(50, 28, 40), new THREE.Vector3(45, 5, 10), "material_tiles_02", "material_walltiles_02", bathroomExteriorWalls, bathroomApertures);
+
+
+          //Loungeroom
+          let loungeApertures = [];
+          loungeApertures.push(new Opening(2, 0, 0, "window 01", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          loungeApertures.push(new Opening(1, -15, 0, "window 01", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          loungeApertures.push(new Opening(1, 15, 0, "window 01", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          loungeApertures.push(new Opening(0, 0, -3.5, "door 01 open wide", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          loungeApertures.push(new Opening(3, 10, -3.5, "door 01 open wide", false)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          let loungeroomExteriorWalls = [false,true,true,false];
+          this.loungeroom = new Room("Lounge Room", new THREE.Vector3(70, 28, 80), new THREE.Vector3(-15, 5, 50), "material_woodfloor_01", "material_wall_01", loungeroomExteriorWalls, loungeApertures);
+
+
+          //Kitchen
+
+          let kitchenApertures = [];
+          kitchenApertures.push(new Opening(1, 0, -3.5, "door 01 open wide", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          kitchenApertures.push(new Opening(2, 0, 0, "window 01", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          kitchenApertures.push(new Opening(3, 0, -3.5, "door 01 open wide", true)); //Aperture arguments int side,string name,vector3 location,boolean enableModel
+          let kitchenExteriorWalls = [false,false,true,true];
+          this.kitchen = new Room("Kitchen", new THREE.Vector3(50, 28, 60), new THREE.Vector3(45, 5, 60), "material_tiles_01", "material_wall_01", kitchenExteriorWalls, kitchenApertures);
+
+
+          houseLighting.update();
+      }
+      lightToggle()
+      {
+          this.loungeroom.lightToggle();
+      }
 
   }
 

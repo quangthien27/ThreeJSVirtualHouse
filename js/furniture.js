@@ -9,8 +9,8 @@ function loadFurniture() {
     getModel("D_Plant.obj", 4.7, 0, 0, "D_Plant.mtl", 10, 60, 10, -28);
 
     //KITCHEN
-    getModel("modern_table_and_chairs_obj.obj", 0, 0, 0, "modern_table_and_chairs_obj.mtl", 12, 45, 5, 50);
-    getModel("Kitchen_3_Wardrobe.obj", 0, 4.7, 0, "Kitchen_3_Wardrobe.mtl", 2, 65, 5, 60);
+    getModel("modern_table_and_chairs_obj.obj", 0, 0, 0, "modern_table_and_chairs_obj.mtl", 12, 45, 5, 54);
+    getModel("Kitchen_3_Wardrobe.obj", 0, 0, 0, "Kitchen_3_Wardrobe.mtl", 2, 52, 5, 33);
 
     //BEDROOM 2
     getModel("objBED.obj", 0, 9.4, 0, "objBED.mtl", 26, -22, 5, -59);
@@ -24,7 +24,7 @@ function loadFurniture() {
     getModel("Coffeet2.obj", 4.7, 0, 4.7, "Coffeet2.mtl", 24, -10, 5, 82);
     getModel("sofa.obj", 0, 0, 0, "sofa.mtl", 24, -5, 8.5, 60);
     getModel("mus001.obj", 4.7, 0, 0, "mus001.mtl", 6, -30, 5, 68);
-    getModel("painting.obj", 0, 0, 0, "painting.mtl", 25, -9, 9, 11.4);
+    getModel("painting.obj", 0, 0, 0, "painting.mtl", 25, -2, 9, 11.4);
 
     //CORRIDOR
     getModel("Coat-Tree.obj", 4.7, 0, 0, "Coat-Tree.mtl", 26, -40, 7, -5);
@@ -41,7 +41,7 @@ function getModel(objFileName, xRotate, yRotate, zRotate, mtlFileName, objectSiz
     var mtlLoader = new THREE.MTLLoader();
     mtlLoader.setTexturePath("models/");
     mtlLoader.setPath("models/");
-    
+
     var objLoader = new THREE.OBJLoader();
     objLoader.setPath("models/");
 
