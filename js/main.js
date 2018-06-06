@@ -293,8 +293,9 @@ scene.add(new THREE.LineSegments(geometry, material));
 
       var segmentCount = 500,radius = this.defaultRadius;
       var theta = (this.time / segmentCount) * Math.PI * 2;
+      var lightPos = new THREE.Vector3(Math.sin(theta) * 200,Math.cos(theta) * -200,0);
       this.sunPos = new THREE.Vector3(Math.sin(theta) * radius,Math.cos(theta) * -radius,0);
-      this.sunlight.position.set(this.sunPos.x,this.sunPos.y,this.sunPos.z);
+      this.sunlight.position.set(lightPos.x,lightPos.y,lightPos.z);
       this.sphere.position.set(this.sunPos.x,this.sunPos.y,this.sunPos.z);
       //this.time = time;
       // transform.makeTranslation(this.sunPos.x,this.sunPos.y,this.sunPos.z);
