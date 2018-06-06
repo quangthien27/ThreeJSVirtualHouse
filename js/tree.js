@@ -27,12 +27,12 @@ class Base {
 
 class Tree
 {
-  constructor()
+  constructor(posX = 100, posY = 0, poxZ = 100)
   {
     //position
     this.origin = new THREE.Matrix4();
     this.initDir = new THREE.Matrix4();
-    this.origin.makeTranslation(100,0,100);
+    this.origin.makeTranslation(posX,posY,poxZ);
     this.segLength = 5.8;
 
     //Array containing tree meshes
@@ -45,7 +45,7 @@ class Tree
     this.leafMeshes = [];
     this.leaves = [];
 
-    this.root = new Segment(this.origin, this.initDir);
+    this.root = new Segment(this.origin, this.initDir, this);
     this.root.trunk = true;
     this.segments.push(this.root);
     this.writeStats();
@@ -80,7 +80,7 @@ class Tree
     this.segments = [];
     this.activeSegments = [];
     this.nextSegments = [];
-    this.root = new Segment(this.origin, this.initDir);
+    this.root = new Segment(this.origin, this.initDir, this);
     this.root.trunk = true;
     this.segments.push(this.root);
     this.writeStats();
@@ -110,26 +110,27 @@ class Tree
       }
     }
 
-    for(var z = 0;z < this.activeSegments.length;z++)
-    {
-
-        //alert(this.activeSegments[z].origin.elements);
-        //this.LeafMeshes.push(this.segments[i].getMesh())
-        this.nextSegments = [];
-        this.nextSegments = this.activeSegments[z].getNext();
-        for(var t = 0;t<this.nextSegments.length;t++)
+      for(var z = 0;z < (this.activeSegments.length > 8 ? 8 : this.activeSegments.length);z++)
       {
-        //alert("so....")
-        this.segments.push(this.nextSegments[t]);
-        if(this.nextSegments[t].active)
-        {
-          //alert("Active?");
-          this.leaves.push( new Leaf(this.nextSegments[t].origin));
-      }
-      }
-        //this.segments.push(new Segment(this.origin, this.initDir, 2));
 
-    }
+          //alert(this.activeSegments[z].origin.elements);
+          //this.LeafMeshes.push(this.segments[i].getMesh())
+          this.nextSegments = [];
+          this.nextSegments = this.activeSegments[z].getNext();
+          for(var t = 0;t<this.nextSegments.length;t++)
+          {
+              //alert("so....")
+              this.segments.push(this.nextSegments[t]);
+              if(this.nextSegments[t].active)
+              {
+                  //alert("Active?");
+                  this.leaves.push( new Leaf(this.nextSegments[t].origin, this));
+              }
+          }
+          //this.segments.push(new Segment(this.origin, this.initDir, 2));
+
+      }
+
     for(var y = 0;y < this.leaves.length;y++)
    {
         this.leafMeshes.push(this.leaves[y].getMesh());
@@ -181,9 +182,10 @@ class Tree
 
 class Segment
 {
-  constructor(posMatrix, direction)
+  constructor(posMatrix, direction, tree)
   {
-    this.segLength = 5;
+    this.segLength = 10;
+    this.tree = tree;
 
     this.trunkSize = 0;
     this.active = true;
@@ -244,13 +246,13 @@ class Segment
         this.nextRotationX2.makeRotationY(20 * Math.PI / 180);
 
         this.nextPos.multiply(this.nextRotationX)
-        this.nextSegments.push(new Segment(this.nextPos, this.direction));
+        this.nextSegments.push(new Segment(this.nextPos, this.direction, this.tree));
         this.nextPos.multiply(this.nextRotationX)
         //this.direction.x =(Math.random()-.5)*2
         //this.direction.z =(Math.random()-.5)*2;
         if((Math.floor(Math.random()+.6))<1)
         {
-        var blerg = new Segment(this.nextPos, this.direction)
+        var blerg = new Segment(this.nextPos, this.direction, this.tree)
         blerg.trunk = true;
         this.nextSegments.push(blerg);
       }
@@ -260,12 +262,12 @@ class Segment
           //alert(Math.floor(Math.random()+.5));
           if((Math.floor(Math.random()+.4))<1)
           {
-          this.nextSegments.push(new Segment(this.nextPos, this.direction));
+          this.nextSegments.push(new Segment(this.nextPos, this.direction, this.tree));
           }
           this.nextRotationX3 = new THREE.Matrix4();
           this.nextRotationX3.makeRotationY(20 * Math.PI / 180);
           this.nextPos.multiply(this.nextRotationX3)
-          this.nextSegments.push(new Segment(this.nextPos, this.direction));
+          this.nextSegments.push(new Segment(this.nextPos, this.direction, this.tree));
 
       }
       return this.nextSegments;
@@ -293,7 +295,7 @@ class Segment
     //this.segmentMat = new THREE.MeshBasicMaterial( {map: this.my_texture} );
     //this.segmentMat.color = this.segmentColor;
     //this.segmentMat.wireframe = true;
-    this.segMesh = new THREE.Mesh(this.segmentGeom, tree.segmentMat);
+    this.segMesh = new THREE.Mesh(this.segmentGeom, this.tree.segmentMat);
     this.segMesh.castShadow = true;
     this.segMesh.receiveShadow = true;
 
@@ -307,8 +309,9 @@ class Segment
 
 class Leaf
 {
-  constructor(matrix)
+  constructor(matrix, tree)
   {
+      this.tree = tree;
     this.meshPos = new THREE.Matrix4();
     this.meshOffset = new THREE.Matrix4();
     this.meshOffset.makeTranslation(0,0,0);
@@ -322,7 +325,7 @@ class Leaf
     this.leafGeom = new THREE.PlaneGeometry(18,18,4,100);
     this.planeGeom = new THREE.CylinderGeometry(200,200,.1,64);
 
-    this.leafMesh = new THREE.Mesh(this.leafGeom, tree.leafMat);
+    this.leafMesh = new THREE.Mesh(this.leafGeom, this.tree.leafMat);
 
     this.translate = new THREE.Matrix4();
     this.translate.multiply(this.meshPos);
@@ -332,21 +335,95 @@ class Leaf
     return this.leafMesh;
   }
 }
-leaf = new Leaf();
+// leaf = new Leaf();
 //scene.add(leaf.getMesh());
 
 
 //window.addEventListener('keydown', handleKeyDown, false);
+
+function getRandomArbitrary(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
 function CreateScene() {
+    effectController.sunCircling = false;
+    gui.updateDisplay();
 
-  base = new Base();
-  tree = new Tree();
-  tree.grow();
+    var trees = 5;
+    var limitBottom = 90;
+    var limitTop = 150;
+    var maxDelay = 1000;
+    var maxGrowTimes = 20;
 
-    for(var i =0; i<12;i++)
-    {
-        tree.grow();
+    for (let i = 0; i < trees; i++) {
+        var x = getRandomArbitrary(limitBottom, limitTop);
+        var z = getRandomArbitrary(limitBottom, limitTop);
+        var tree = new Tree(x, 0, z);
+
+        for(var j =0; j<getRandomArbitrary(6, maxGrowTimes);j++)
+        {
+            (function(tree){
+                setTimeout(function(){tree.grow();}, getRandomArbitrary(300, maxDelay));
+            })(tree);
+        }
     }
+
+    for (let i = 0; i < trees; i++) {
+        var x = getRandomArbitrary(limitBottom, limitTop);
+        var z = getRandomArbitrary(-limitTop, -limitBottom);
+        var tree = new Tree(x, 0, z);
+
+        for(let j =0; j<getRandomArbitrary(6, maxGrowTimes);j++)
+        {
+            (function(tree){
+                setTimeout(function(){tree.grow();}, getRandomArbitrary(100, maxDelay));
+            })(tree);
+        }
+    }
+
+    for (let i = 0; i < trees; i++) {
+        var x = getRandomArbitrary(limitBottom, limitTop);
+        var z = getRandomArbitrary(-limitBottom, limitBottom);
+        var tree = new Tree(x, 0, z);
+
+        for(let j =0; j<getRandomArbitrary(6, maxGrowTimes);j++)
+        {
+            (function(tree){
+                setTimeout(function(){tree.grow();}, getRandomArbitrary(100, maxDelay));
+            })(tree);
+        }
+    }
+
+    for (let i = 0; i < trees; i++) {
+        var x = getRandomArbitrary(0, limitBottom);
+        var z = getRandomArbitrary(limitBottom + 20, limitTop);
+        var tree = new Tree(x, 0, z);
+
+        for(let j =0; j<getRandomArbitrary(6, maxGrowTimes);j++)
+        {
+            (function(tree){
+                setTimeout(function(){tree.grow();}, getRandomArbitrary(100, maxDelay));
+            })(tree);
+        }
+    }
+
+    // base = new Base();
+  // var tree1 = new Tree(100, 0, 100);
+  // var tree2 = new Tree(120, 0, 120);
+  // var tree3 = new Tree(100, 0, 120);
+  // var tree4 = new Tree(120, 0, 100);
+  //
+  //   for(var i =0; i<10;i++)
+  //   {
+  //       tree1.grow();
+  //       tree2.grow();
+  //   }
+  //
+  //   for(var i =0; i<3;i++)
+  //   {
+  //       tree3.grow();
+  //       tree4.grow();
+  //   }
   //tree.grow();
   //tree.grow();
   //tree.grow();
@@ -354,7 +431,11 @@ function CreateScene() {
 }
 
 
-CreateScene();
+// CreateScene();
+
+function addTrees() {
+    CreateScene();
+}
 
 function myFunction(repeats) {
   //ClearScene();

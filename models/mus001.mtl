@@ -1,0 +1,70 @@
+# 
+# Wavefront material file
+# Converted by the DEEP Exploration  Deep Exploration 5 5.0.5.1846 Release
+# Right Hemisphere, LTD
+# http://www.righthemisphere.com/
+# 
+
+newmtl mus001_piano__Vr
+Ka 0.0784314 0.0784314 0.0784314
+Kd 0.0784314 0.0784314 0.0784314
+Ks 0.898039 0.898039 0.898039
+illum 2
+Ns 128
+map_Kd mus001_m0000.jpg
+map_bump 
+bump 
+map_opacity 
+map_d 
+refl 
+map_kS 
+map_kA 
+map_Ns 
+
+newmtl mus001_blackkeys
+Ka 0.117647 0.117647 0.117647
+Kd 0.117647 0.117647 0.117647
+Ks 0.898039 0.898039 0.898039
+illum 2
+Ns 8
+map_Kd mus001_m0000.jpg
+map_bump 
+bump 
+map_opacity 
+map_d 
+refl 
+map_kS 
+map_kA 
+map_Ns 
+
+newmtl mus001_whitekeys
+Ka 0 0 0
+Kd 1 1 1
+Ks 1 1 1
+illum 2
+Ns 8
+map_Kd mus001_m0000.jpg
+map_bump 
+bump 
+map_opacity 
+map_d 
+refl 
+map_kS 
+map_kA 
+map_Ns 
+
+newmtl mus001_metall__V
+Ka 0 0 0
+Kd 0.564706 0.447059 0.192157
+Ks 1 1 1
+illum 2
+Ns 2048
+map_Kd mus001_m0000.jpg
+map_bump 
+bump 
+map_opacity 
+map_d 
+refl 
+map_kS 
+map_kA 
+map_Ns 

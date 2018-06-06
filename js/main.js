@@ -4,17 +4,23 @@
   var scene = new THREE.Scene();
 
   var sky, sunSphere, objects = [];
-  var sunCircling = true;
+  var ceilings = [];
+  var axis;
+  var ambientLight
   var gui = new dat.GUI();
 
   var effectController = {
       sunSpeed: .5,
+      enableCeiling: true,
+      enableAxis: false,
+      sunCircling: true,
+      ambientLightIntensity: 0.4,
   };
 
   //create the perspective camera
   //for parameters see https://threejs.org/docs/#api/cameras/PerspectiveCamera
   var camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 10, 2000000 );
-  camera.position.set( 100, 100, 200 );
+  camera.position.set( -200, 100, 50 );
 
   //set the position of the camera
   // camera.position.set(100, 100, 100);
@@ -68,6 +74,9 @@
   scene.background = new THREE.Color(0x292325);
 
   var initSky = function(){
+      axis = new THREE.AxesHelper(10000);
+      axis.visible = effectController.enableAxis;
+      scene.add(axis);
       // Add Sky
       // sky = new THREE.Sky();
       // sky.scale.setScalar(450000);
@@ -121,16 +130,28 @@
 
       // GROUND
 
-      var groundGeo = new THREE.PlaneBufferGeometry( 10000, 10000 );
-      var groundMat = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x050505 } );
-      groundMat.color.setHSL( 0.095, 1, 0.75 );
-
-      var ground = new THREE.Mesh( groundGeo, groundMat );
-      ground.rotation.x = -Math.PI/2;
-      // ground.position.y = -33;
+      var loader = new THREE.TextureLoader();
+      var groundTexture = loader.load( 'img/grasslight-big.jpg' );
+      groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
+      groundTexture.repeat.set( 120, 120 );
+      groundTexture.anisotropy = 16;
+      // var groundMaterial = new THREE.MeshLambertMaterial( { map: groundTexture } );
+      var groundMaterial = new THREE.MeshPhongMaterial( { map: groundTexture } );
+      var ground = new THREE.Mesh( new THREE.PlaneBufferGeometry( 10000, 10000 ), groundMaterial );
+      ground.rotation.x = - Math.PI / 2;
+      ground.receiveShadow = true;
       scene.add( ground );
 
-      ground.receiveShadow = true;
+      // var groundGeo = new THREE.PlaneBufferGeometry( 10000, 10000 );
+      // var groundMat = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x050505 } );
+      // groundMat.color.setHSL( 0.095, 1, 0.75 );
+      //
+      // var ground = new THREE.Mesh( groundGeo, groundMat );
+      // ground.rotation.x = -Math.PI/2;
+      // ground.position.y = -33;
+      // scene.add( ground );
+
+      // ground.receiveShadow = true;
 
       // SKYDOME
 
@@ -158,34 +179,47 @@
   };
 
   function guiChanged() {
-
-
+      if (ceilings.length > 0) {
+          ceilings.forEach(function(ceiling){
+              ceiling.visible = effectController.enableCeiling;
+          });
+      }
+      if ('undefined' !== typeof axis) {
+          axis.visible = effectController.enableAxis;
+      }
+      if ('undefined' !== typeof ambientLight) {
+          ambientLight.intensity = effectController.ambientLightIntensity;
+      }
   }
 
-  gui.add(effectController, "sunSpeed", 0.05, 7.0, 0.05).onChange(guiChanged);
+  gui.add(effectController, "sunSpeed", 0.05, 10.0, 0.05).onChange(guiChanged);
+  gui.add(effectController, "ambientLightIntensity", 0.1, 1, 0.05).onChange(guiChanged);
+  gui.add(effectController, "enableCeiling").onChange(guiChanged);
+  gui.add(effectController, "enableAxis").onChange(guiChanged);
+  gui.add(effectController, "sunCircling");
 
   guiChanged();
 
 
-  var adaptDragAndDrop = function () {
-      var geometry = new THREE.BoxBufferGeometry( 40, 40, 40 );
-
-      for (var i = 0; i < 10; i++) {
-          var object = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({color: Math.random() * 0xffffff}));
-          object.position.x = Math.random() * 1000 - 500;
-          object.position.y = Math.random() * 600 - 300;
-          object.position.z = Math.random() * 800 - 400;
-          object.rotation.x = Math.random() * 2 * Math.PI;
-          object.rotation.y = Math.random() * 2 * Math.PI;
-          object.rotation.z = Math.random() * 2 * Math.PI;
-          object.scale.x = Math.random() * 2 + 1;
-          object.scale.y = Math.random() * 2 + 1;
-          object.scale.z = Math.random() * 2 + 1;
-          object.castShadow = true;
-          object.receiveShadow = true;
-          scene.add(object);
-          objects.push(object);
-      }
+  var adaptDragAndDrop = function (objects) {
+      // var geometry = new THREE.BoxBufferGeometry( 40, 40, 40 );
+      //
+      // for (var i = 0; i < 10; i++) {
+      //     var object = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({color: Math.random() * 0xffffff}));
+      //     object.position.x = Math.random() * 1000 - 500;
+      //     object.position.y = Math.random() * 600 - 300;
+      //     object.position.z = Math.random() * 800 - 400;
+      //     object.rotation.x = Math.random() * 2 * Math.PI;
+      //     object.rotation.y = Math.random() * 2 * Math.PI;
+      //     object.rotation.z = Math.random() * 2 * Math.PI;
+      //     object.scale.x = Math.random() * 2 + 1;
+      //     object.scale.y = Math.random() * 2 + 1;
+      //     object.scale.z = Math.random() * 2 + 1;
+      //     object.castShadow = true;
+      //     object.receiveShadow = true;
+      //     scene.add(object);
+      //     objects.push(object);
+      // }
 
       var dragControls = new THREE.DragControls(objects, camera, renderer.domElement);
       dragControls.addEventListener('dragstart', function (event) {
@@ -197,7 +231,7 @@
 
   };
 
-  adaptDragAndDrop();
+  // adaptDragAndDrop();
 
   // var base_mesh, switch_mesh;
   // var lightState = "on";
@@ -304,8 +338,8 @@
       this.sunlight.castShadow = true;
 
 
-      this.sunlight.shadow.mapSize.width = 4096;
-      this.sunlight.shadow.mapSize.height = 4096;
+      this.sunlight.shadow.mapSize.width = 4096 / 2;
+      this.sunlight.shadow.mapSize.height = 4096 / 2;
       this.sunlight.shadow.camera.left = -300;
       this.sunlight.shadow.camera.right = 300;
       this.sunlight.shadow.camera.top = 300;
@@ -518,10 +552,6 @@ class ModelLibrary
       }
     }
   }
-
-  var toggleSunCircling = function(){
-      sunCircling = !sunCircling;
-  };
 
 
   class houseLightManager
@@ -740,17 +770,18 @@ class ModelLibrary
       scene.add(this.floorMesh);
 
 
-      /*
       this.ceilingOffset = new THREE.Matrix4;
-      this.ceilingOffset.makeTranslation(0,this.dimensions.y,0)
+      this.ceilingOffset.makeTranslation(0,this.dimensions.y,0);
       this.ceilingOffset.multiply(this.origin);
 
-      this.ceilingMesh = new THREE.Mesh(this.floorGeom, matLib.floor_wood_01);
-      this.ceilingMesh.receiveShadow = true;
-      this.ceilingMesh.castShadow = true;
-      this.ceilingMesh.applyMatrix(this.ceilingOffset);
-      scene.add(this.ceilingMesh);
-      */
+      var ceiling = new THREE.Mesh(this.floorGeom, matLib.floor_wood_01);
+      ceiling.receiveShadow = true;
+      ceiling.castShadow = true;
+      ceiling.applyMatrix(this.ceilingOffset);
+      ceiling.rotation.x = Math.PI/2;
+      ceiling.visible = effectController.enableCeiling;
+      scene.add(ceiling);
+      ceilings.push(ceiling);
 
       //Create foundations for the floor
       let foundationsGeom = new THREE.BoxGeometry(this.dimensions.x+3, 5, this.dimensions.z+2);
@@ -1206,7 +1237,7 @@ class ModelLibrary
   //the same orbit control
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   // controls.minPolarAngle = 0;
-  controls.maxPolarAngle = Math.PI/2 - Math.PI/180 * 10;
+  controls.maxPolarAngle = Math.PI/2 - Math.PI/180 * 5;
   controls.maxDistance = 500;
   controls.minDistance = 50;
   var currI = 0;
@@ -1232,14 +1263,15 @@ class ModelLibrary
   var cameralight = new THREE.PointLight(new THREE.Color(.2, .2, .2), 0.9);
   camera.add(cameralight);
   scene.add(camera);
-  scene.add(new THREE.AmbientLight(new THREE.Color(.6, .7, .9), 0.4));
+  ambientLight = new THREE.AmbientLight(new THREE.Color(.6, .7, .9), effectController.ambientLightIntensity);
+  scene.add(ambientLight);
 
 
 
 
   var MyUpdateLoop = function() {
     requestAnimationFrame(MyUpdateLoop);
-    if (sunCircling) {
+    if (effectController.sunCircling) {
         environment.time += effectController.sunSpeed;
         environment.update();
     }
