@@ -11,7 +11,7 @@ var effectController = {
     sunSpeed: .5,
     enableCeiling: true,
     enableAxis: false,
-    sunCircling: false,
+    sunCircling: true,
     ambientLightIntensity: 0.4,
 };
 
